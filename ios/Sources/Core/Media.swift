@@ -28,6 +28,32 @@ enum PhotoSaver {
     }
 }
 
+extension PhotoSaver {
+    /// Plusieurs vidéos et photos en une fois.
+    static func saveMany(videos: [URL], images: [URL], completion: @escaping (Bool) -> Void) {
+        guard !videos.isEmpty || !images.isEmpty else {
+            completion(false)
+            return
+        }
+        PHPhotoLibrary.requestAuthorization(for: .addOnly) { status in
+            guard status == .authorized || status == .limited else {
+                DispatchQueue.main.async { completion(false) }
+                return
+            }
+            PHPhotoLibrary.shared().performChanges({
+                for video in videos {
+                    _ = PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: video)
+                }
+                for image in images {
+                    _ = PHAssetChangeRequest.creationRequestForAssetFromImage(atFileURL: image)
+                }
+            }, completionHandler: { success, _ in
+                DispatchQueue.main.async { completion(success) }
+            })
+        }
+    }
+}
+
 /// Compression des vidéos (720p) et des sons (AAC) avec AVFoundation.
 enum MediaCompressor {
     static func compressVideo(source: URL, target: URL, completion: @escaping (Bool) -> Void) {

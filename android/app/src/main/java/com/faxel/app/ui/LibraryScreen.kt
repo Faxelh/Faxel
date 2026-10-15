@@ -3,6 +3,14 @@ package com.faxel.app.ui
 import android.content.Context
 import android.content.Intent
 import androidx.activity.compose.BackHandler
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material.icons.rounded.Checklist
+import androidx.compose.material.icons.rounded.PhotoLibrary
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -96,7 +104,18 @@ object LibraryModel {
     var watermark by mutableStateOf<String?>(null)
     var query by mutableStateOf("")
     var searching by mutableStateOf(false)
+    /** Sélection de plusieurs éléments (clé = chemin du fichier). */
+    val selection = SelectionState()
 }
+
+/** Fichiers à exporter pour un élément (les photos d'une publication sont dans un dossier). */
+private fun filesOf(entry: Entry): List<File> =
+    if (entry.isFolder) {
+        File(entry.path).listFiles()?.filter { it.isFile && it.extension.lowercase() in setOf("jpg", "jpeg", "png", "webp", "gif", "mp4") }
+            ?.sortedBy { it.name } ?: emptyList()
+    } else {
+        listOf(File(entry.path)).filter { it.isFile }
+    }
 
 /** Ouvre un élément : vidéo (avec les épisodes du même dossier), son (avec la liste), photos. */
 fun openEntry(context: Context, entry: Entry, list: List<Entry>, onAudio: () -> Unit) {
@@ -133,8 +152,10 @@ fun share(context: Context, entry: Entry) {
 fun LibraryScreen(onOpenAudio: () -> Unit) {
     val model = LibraryModel
     val context = LocalContext.current
-    BackHandler(enabled = model.folder != null || model.playlist != null || model.gallery != null) {
+    val selection = model.selection
+    BackHandler(enabled = model.folder != null || model.playlist != null || model.gallery != null || selection.active) {
         when {
+            selection.active -> selection.finish()
             model.gallery != null -> model.gallery = null
             model.playlist != null -> model.playlist = null
             else -> model.folder = null
@@ -155,14 +176,28 @@ fun LibraryScreen(onOpenAudio: () -> Unit) {
     }
     val minCell = if (Layout.wide) 200.dp else 160.dp
 
+    // Ce que « Tout sélectionner » prend dans la vue actuelle.
+    val selectable = when (model.section) {
+        Section.Videos -> all.filter { it.isVideo && (model.folder == null || it.folderPath == model.folder) }
+        Section.Music -> all.filter { it.isAudio }
+        Section.Favorites -> all.filter { it.path in Engine.favorites }
+        Section.Playlists -> model.playlist?.let { id ->
+            val byPath = all.associateBy { it.path }
+            Engine.playlists.firstOrNull { it.id == id }?.paths?.mapNotNull { byPath[it] }
+        } ?: emptyList()
+        Section.Photos -> all.filter { it.isFolder }
+    }
+    LaunchedEffect(model.section, model.folder, model.playlist) { selection.finish() }
+
+    Box(Modifier.fillMaxSize()) {
     LazyVerticalGrid(
         GridCells.Adaptive(minCell),
         Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = 12.dp, end = 12.dp, bottom = 24.dp),
+        contentPadding = PaddingValues(start = 12.dp, end = 12.dp, bottom = if (selection.active) 150.dp else 24.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        full { Header(context) }
+        full { Header(context, canSelect = selectable.isNotEmpty()) }
         when (model.section) {
             Section.Videos -> videos(all, context)
             Section.Music -> list(all.filter { it.isAudio }, context, onOpenAudio, showPlayAll = true)
@@ -171,6 +206,78 @@ fun LibraryScreen(onOpenAudio: () -> Unit) {
             Section.Photos -> photos(all)
         }
     }
+    if (selection.active) {
+        LibrarySelectionBar(selectable, Modifier.align(Alignment.BottomCenter))
+    }
+    }
+}
+
+/** Barre de sélection de la bibliothèque : Galerie, Dossier, Partager, Supprimer. */
+@Composable
+private fun LibrarySelectionBar(selectable: List<Entry>, modifier: Modifier) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val selection = LibraryModel.selection
+    val chosen = selectable.filter { selection.isSelected(it.path) }
+    var confirm by remember { mutableStateOf(false) }
+    val galleryDone = stringResource(R.string.sel_gallery_done)
+    val folderDone = stringResource(R.string.sel_folder_done)
+    val working = stringResource(R.string.sel_working)
+    val folderPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { tree ->
+        if (tree != null) {
+            val files = chosen.flatMap { filesOf(it) }
+            Toast.makeText(context, working, Toast.LENGTH_SHORT).show()
+            scope.launch {
+                val count = Exporter.toFolder(context, tree, files)
+                Toast.makeText(context, folderDone.format(count), Toast.LENGTH_LONG).show()
+                selection.finish()
+            }
+        }
+    }
+    Box(modifier) {
+        SelectionBar(
+            count = chosen.size,
+            total = selectable.size,
+            onAll = { selection.setAll(selectable.map { it.path }, it) },
+            onDone = { selection.finish() },
+            actions = listOf(
+                SelectionAction(stringResource(R.string.sel_gallery), Icons.Rounded.PhotoLibrary, enabled = chosen.isNotEmpty()) {
+                    val files = chosen.flatMap { filesOf(it) }
+                    Toast.makeText(context, working, Toast.LENGTH_SHORT).show()
+                    scope.launch {
+                        val count = Exporter.toGallery(context, files)
+                        Toast.makeText(context, galleryDone.format(count), Toast.LENGTH_LONG).show()
+                        selection.finish()
+                    }
+                },
+                SelectionAction(stringResource(R.string.sel_folder), Icons.Rounded.Folder, enabled = chosen.isNotEmpty()) {
+                    folderPicker.launch(null)
+                },
+                SelectionAction(stringResource(R.string.sel_share), Icons.Rounded.Share, enabled = chosen.isNotEmpty()) {
+                    Exporter.share(context, chosen.flatMap { filesOf(it) })
+                },
+                SelectionAction(stringResource(R.string.sel_delete), Icons.Rounded.Delete, enabled = chosen.isNotEmpty(), destructive = true) {
+                    confirm = true
+                },
+            ),
+        )
+    }
+    if (confirm) {
+        AlertDialog(
+            onDismissRequest = { confirm = false },
+            title = { Text(stringResource(R.string.sel_delete_title, chosen.size)) },
+            text = { Text(stringResource(R.string.sel_delete_text)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    chosen.forEach { Engine.delete(it) }
+                    Toast.makeText(context, context.getString(R.string.sel_deleted, chosen.size), Toast.LENGTH_SHORT).show()
+                    confirm = false
+                    selection.finish()
+                }) { Text(stringResource(R.string.sel_delete), color = Color(0xFFFF5252)) }
+            },
+            dismissButton = { TextButton(onClick = { confirm = false }) { Text(stringResource(R.string.cancel)) } },
+        )
+    }
 }
 
 private fun LazyGridScope.full(content: @Composable () -> Unit) {
@@ -178,7 +285,7 @@ private fun LazyGridScope.full(content: @Composable () -> Unit) {
 }
 
 @Composable
-private fun Header(context: Context) {
+private fun Header(context: Context, canSelect: Boolean) {
     val model = LibraryModel
     Column {
         val title = when {
@@ -196,6 +303,11 @@ private fun Header(context: Context) {
                 modifier = Modifier.weight(1f).padding(start = 4.dp))
             IconButton(onClick = { model.searching = !model.searching; if (!model.searching) model.query = "" }) {
                 Icon(Icons.Rounded.Search, null, tint = accent)
+            }
+            if (canSelect || model.selection.active) {
+                IconButton(onClick = { if (model.selection.active) model.selection.finish() else model.selection.start() }) {
+                    Icon(if (model.selection.active) Icons.Rounded.Close else Icons.Rounded.Checklist, null, tint = accent)
+                }
             }
             IconButton(onClick = { Engine.rescan() }) { Icon(Icons.Rounded.Refresh, null, tint = accent) }
         }
@@ -261,9 +373,18 @@ private fun LazyGridScope.videos(all: List<Entry>, context: Context) {
 @Composable
 private fun VideoCard(entry: Entry, list: List<Entry>, context: Context) {
     var menu by remember { mutableStateOf(false) }
-    Column(Modifier.clip(RoundedCornerShape(14.dp)).combinedClickable(onClick = { openEntry(context, entry, list) {} }, onLongClick = { menu = true })) {
+    val selection = LibraryModel.selection
+    Column(
+        Modifier.clip(RoundedCornerShape(14.dp)).combinedClickable(
+            onClick = { if (selection.active) selection.toggle(entry.path) else openEntry(context, entry, list) {} },
+            onLongClick = { if (selection.active) selection.toggle(entry.path) else selection.start(entry.path) },
+        ),
+    ) {
         Box {
             Thumb(entry.thumbnail, entry.path, modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f))
+            if (selection.active) {
+                SelectionCheck(selection.isSelected(entry.path), Modifier.align(Alignment.TopStart).padding(6.dp))
+            }
             entry.duration?.takeIf { it > 0 }?.let {
                 Text(
                     formatTime(it), color = Color.White, fontSize = 11.sp,
@@ -316,14 +437,23 @@ private fun LazyGridScope.list(entries: List<Entry>, context: Context, onAudio: 
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun EntryRow(entry: Entry, list: List<Entry>, context: Context, onAudio: () -> Unit, playlistId: String?) {
     var menu by remember { mutableStateOf(false) }
     val playing = AudioConnection.currentPath == entry.path
+    val selection = LibraryModel.selection
     Row(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable { openEntry(context, entry, list, onAudio) }.padding(vertical = 6.dp),
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).combinedClickable(
+            onClick = { if (selection.active) selection.toggle(entry.path) else openEntry(context, entry, list, onAudio) },
+            onLongClick = { if (selection.active) selection.toggle(entry.path) else selection.start(entry.path) },
+        ).padding(vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        if (selection.active) {
+            SelectionCheck(selection.isSelected(entry.path))
+            Spacer(Modifier.width(10.dp))
+        }
         Thumb(entry.thumbnail, entry.path, modifier = Modifier.width(if (entry.isAudio) 52.dp else 92.dp).aspectRatio(if (entry.isAudio) 1f else 16f / 9f), audio = entry.isAudio)
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
@@ -476,11 +606,19 @@ private fun LazyGridScope.photos(all: List<Entry>) {
     }
     items(folders, key = { "ph-" + it.path }) { entry ->
         val first = File(entry.path).listFiles()?.filter { it.extension.lowercase() in setOf("jpg", "jpeg", "png", "webp") }?.minByOrNull { it.name }
-        Column(Modifier.clip(RoundedCornerShape(14.dp)).clickable { LibraryModel.gallery = entry.path }) {
-            if (first != null) {
-                AsyncImage(first, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(12.dp)))
-            } else {
-                Thumb(entry.thumbnail, null, modifier = Modifier.fillMaxWidth().aspectRatio(1f), folder = true)
+        val selection = LibraryModel.selection
+        Column(Modifier.clip(RoundedCornerShape(14.dp)).clickable {
+            if (selection.active) selection.toggle(entry.path) else LibraryModel.gallery = entry.path
+        }) {
+            Box {
+                if (first != null) {
+                    AsyncImage(first, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(12.dp)))
+                } else {
+                    Thumb(entry.thumbnail, null, modifier = Modifier.fillMaxWidth().aspectRatio(1f), folder = true)
+                }
+                if (selection.active) {
+                    SelectionCheck(selection.isSelected(entry.path), Modifier.align(Alignment.TopStart).padding(6.dp))
+                }
             }
             Spacer(Modifier.height(6.dp))
             Text(entry.title, color = Color.White, fontSize = 14.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)

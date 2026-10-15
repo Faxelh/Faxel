@@ -381,6 +381,7 @@ struct SongsView: View {
     @State private var query = ""
     @State private var picking: Track?
     @State private var deleting: Track?
+    @StateObject private var selection = SelectionModel()
 
     private var songs: [Track] {
         var list = model.songs
@@ -417,8 +418,15 @@ struct SongsView: View {
                 PlayShuffleButtons(tracks: list)
                     .listRowSeparator(.hidden)
                 ForEach(Array(list.enumerated()), id: \.element.id) { index, track in
-                    TrackRow(track: track, onTap: { model.play(list, start: index) }) {
-                        TrackActions(track: track, picking: $picking, deleting: $deleting)
+                    HStack(spacing: 10) {
+                        if selection.active {
+                            SelectionCheck(selected: selection.ids.contains(track.id))
+                        }
+                        TrackRow(track: track, onTap: {
+                            if selection.active { selection.toggle(track.id) } else { model.play(list, start: index) }
+                        }) {
+                            TrackActions(track: track, picking: $picking, deleting: $deleting)
+                        }
                     }
                     .contextMenu {
                         TrackActions(track: track, picking: $picking, deleting: $deleting)
@@ -450,7 +458,13 @@ struct SongsView: View {
         .listStyle(.plain)
         .navigationTitle(L("Morceaux"))
         .searchable(text: $query, prompt: L("Rechercher dans les morceaux"))
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if selection.active { SelectionBar(selection: selection, all: list) }
+        }
         .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                SelectButton(selection: selection)
+            }
             ToolbarItem(placement: .navigationBarTrailing) {
                 Menu {
                     Picker(L("Trier par"), selection: $sort) {
@@ -477,6 +491,7 @@ struct VideosView: View {
     @State private var query = ""
     @State private var picking: Track?
     @State private var deleting: Track?
+    @StateObject private var selection = SelectionModel()
 
     private var allVideos: [Track] {
         model.videos.sorted { $0.addedDate > $1.addedDate }
@@ -524,9 +539,16 @@ struct VideosView: View {
                         ForEach(Array(list.enumerated()), id: \.element.id) { index, track in
                             GeometryReader { geometry in
                                 Button {
-                                    model.play(list, start: index)
+                                    if selection.active { selection.toggle(track.id) } else { model.play(list, start: index) }
                                 } label: {
                                     VideoTile(track: track, width: geometry.size.width)
+                                        .overlay(alignment: .topTrailing) {
+                                            if selection.active {
+                                                SelectionCheck(selected: selection.ids.contains(track.id))
+                                                    .padding(8)
+                                            }
+                                        }
+                                        .opacity(selection.active && !selection.ids.contains(track.id) ? 0.75 : 1)
                                 }
                                 .buttonStyle(.plain)
                                 .contextMenu {
@@ -542,8 +564,15 @@ struct VideosView: View {
                 } else {
                     LazyVStack(spacing: 0) {
                         ForEach(Array(list.enumerated()), id: \.element.id) { index, track in
-                            TrackRow(track: track, onTap: { model.play(list, start: index) }) {
-                                TrackActions(track: track, picking: $picking, deleting: $deleting)
+                            HStack(spacing: 10) {
+                                if selection.active {
+                                    SelectionCheck(selected: selection.ids.contains(track.id))
+                                }
+                                TrackRow(track: track, onTap: {
+                                    if selection.active { selection.toggle(track.id) } else { model.play(list, start: index) }
+                                }) {
+                                    TrackActions(track: track, picking: $picking, deleting: $deleting)
+                                }
                             }
                             .padding(.horizontal, 16)
                             .padding(.vertical, 6)
@@ -561,7 +590,13 @@ struct VideosView: View {
         }
         .navigationTitle(folder.isEmpty ? L("Vidéos") : folder)
         .searchable(text: $query, prompt: L("Rechercher dans les vidéos"))
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if selection.active { SelectionBar(selection: selection, all: list) }
+        }
         .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                SelectButton(selection: selection)
+            }
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button {
                     withAnimation { grid.toggle() }

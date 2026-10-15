@@ -1,5 +1,17 @@
 [
  {
+  "date": "2026-10-15T17:30:00Z",
+  "titre": "Sélection multiple",
+  "items": [
+   {
+    "texte": "Bibliothèque : bouton Sélectionner (ou appui long) pour choisir une ou plusieurs vidéos, sons ou photos"
+   },
+   {
+    "texte": "Tout sélectionner, puis exporter vers la galerie, enregistrer dans un dossier (Fichiers), partager ou supprimer d'un coup"
+   }
+  ]
+ },
+ {
   "date": "2026-10-15T16:40:00Z",
   "titre": "Volume du lecteur vidéo",
   "items": [

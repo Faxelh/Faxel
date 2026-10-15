@@ -914,6 +914,49 @@ final class AppModel: ObservableObject {
         }
     }
 
+    /// Sélection : plusieurs vidéos (et photos) ajoutées à l'app Photos d'un coup.
+    func saveManyToPhotos(_ tracks: [Track]) {
+        let present = tracks.filter { FileManager.default.fileExists(atPath: $0.path) }
+        let videos = present.filter { $0.isVideo }.map { $0.fileURL }
+        let images = present.flatMap { $0.photoURLs }
+        guard !videos.isEmpty || !images.isEmpty else {
+            show(L("Rien à ajouter à Photos (les sons ne vont pas dans Photos)."), .warn)
+            return
+        }
+        show(L("Ajout de {count} élément(s) à Photos…", ["count": "\(videos.count + images.count)"]), .info)
+        PhotoSaver.saveMany(videos: videos, images: images) { [weak self] ok in
+            if ok {
+                self?.show(L("{count} élément(s) ajouté(s) à l'app Photos.", ["count": "\(videos.count + images.count)"]), .ok)
+            } else {
+                self?.show(L("Impossible d'ajouter à Photos : autorisez Faxel dans Réglages › Confidentialité › Photos."),
+                           .warn)
+            }
+        }
+    }
+
+    /// Sélection : plusieurs fichiers supprimés d'un coup (un seul message à la fin).
+    func deleteMany(_ tracks: [Track]) {
+        guard !tracks.isEmpty else { return }
+        var remaining = tracks.count
+        var failed = 0
+        for track in tracks {
+            audio?.forget(path: track.path)
+            engine.run("delete", ["entry": track.raw, "delete_file": true]) { [weak self] result in
+                guard let self = self else { return }
+                if !jsonBool(result["ok"]) { failed += 1 }
+                remaining -= 1
+                if remaining == 0 {
+                    if failed == 0 {
+                        self.show(L("{count} élément(s) supprimé(s).", ["count": "\(tracks.count)"]), .info)
+                    } else {
+                        self.show(L("{count} fichier(s) n'ont pas pu être supprimés.", ["count": "\(failed)"]), .error)
+                    }
+                    self.refreshLibrary()
+                }
+            }
+        }
+    }
+
     // MARK: - Coffre
 
     func authenticate(_ reason: String, completion: @escaping (Bool) -> Void) {
