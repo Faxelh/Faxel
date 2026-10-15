@@ -164,4 +164,16 @@
     <string name="videos">Vídeos</string>
     <string name="whole_playlist">Descargar toda la playlist</string>
     <string name="yes">Sí</string>
+    <string name="appname_title">Nombre de la app</string>
+    <string name="appname_hint">Nombre visible</string>
+    <string name="appname_save">Guardar</string>
+    <string name="appname_home">Añadir a la pantalla de inicio</string>
+    <string name="appname_home_info">Android no permite renombrar el icono de una app instalada: se añade un icono con este nombre a la pantalla de inicio (luego se renombra solo). Puedes quitar el icono antiguo.</string>
+    <string name="appname_unsupported">Tu pantalla de inicio no permite añadir este icono. El nombre se usa dentro de la app.</string>
+    <string name="appname_done">Nombre guardado</string>
+    <string name="appname_updated_title">Actualización instalada</string>
+    <string name="appname_updated_text">¿Quieres cambiar el nombre de la app? (actual: %1$s)</string>
+    <string name="appname_change">Cambiar nombre</string>
+    <string name="appname_keep">Mantener</string>
+    <string name="appname_reset">Nombre original</string>
 </resources>

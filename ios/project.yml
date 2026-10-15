@@ -37,6 +37,9 @@ targets:
         LSSupportsOpeningDocumentsInPlace: true
         ITSAppUsesNonExemptEncryption: false
         UIBackgroundModes: [audio]
+        CFBundleURLTypes:
+          - CFBundleURLName: "com.faxel.player"
+            CFBundleURLSchemes: [faxel]
         LSApplicationQueriesSchemes: [shareddocuments]
         NSFaceIDUsageDescription: "Faxel utilise Face ID pour protéger votre Coffre de fichiers privés."
         NSLocalNetworkUsageDescription: "Faxel reçoit les fichiers envoyés depuis votre ordinateur par Wi-Fi (Transfert Wi-Fi)."

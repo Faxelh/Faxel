@@ -265,6 +265,11 @@ struct SettingsView: View {
                         .foregroundColor(.primary)
                     }
                     NavigationLink {
+                        AppNameView()
+                    } label: {
+                        SettingsLabel(title: L("Nom de l'application"), icon: "character.cursor.ibeam", color: .purple)
+                    }
+                    NavigationLink {
                         UpdatesView()
                     } label: {
                         SettingsLabel(title: L("Mises à jour"), icon: "arrow.down.circle.fill", color: .green)

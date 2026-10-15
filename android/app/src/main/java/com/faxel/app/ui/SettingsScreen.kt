@@ -151,10 +151,11 @@ fun SettingsScreen() {
             }
 
             item { Group(stringResource(R.string.about)) }
+            item { com.faxel.app.update.AppNameRow() }
             item { com.faxel.app.update.UpdateSettingsRow() }
             item {
                 Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-                    Text("Faxel " + com.faxel.app.update.Updater.currentVersion, color = Color.White, fontSize = 16.sp)
+                    Text(com.faxel.app.update.AppName.get(androidx.compose.ui.platform.LocalContext.current) + " " + com.faxel.app.update.Updater.currentVersion, color = Color.White, fontSize = 16.sp)
                     Text("Python ${Engine.python} · yt-dlp ${Engine.ytdlp}", color = Muted, fontSize = 13.sp)
                     Text(
                         stringResource(R.string.js_engine) + " : " + stringResource(if (Engine.javascript) R.string.yes else R.string.no),
