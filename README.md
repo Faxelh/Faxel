@@ -6,7 +6,7 @@ Application iPhone **et** Android, dans un seul dépôt (comme Elara).
 - `android/` : app Android (Kotlin, Jetpack Compose)
 - `src/` : moteur de téléchargement (Python + yt-dlp), partagé par l'iPhone et Android
 - `tests/` : tests du moteur
-- `VERSION` : version de base (ex. 2026.1) → les compilations donnent 2026.1.0, 2026.1.1…
+- Version automatique : Année.Mois.N (ex. 2026.10.3 = 3e mise à jour d'octobre 2026), calculée par GitHub à chaque compilation.
 
 ## Mettre à jour (un seul geste)
 
@@ -29,3 +29,9 @@ Application iPhone **et** Android, dans un seul dépôt (comme Elara).
 
 Les fichiers de `.github/workflows` ne peuvent pas être modifiés par un workflow (règle de GitHub) :
 s'ils changent, il faut les déposer à la main dans `.github/workflows`.
+
+## Historique des nouveautés
+- `HISTORIQUE.json` : chaque mise à jour y ajoute ses nouveautés et correctifs (en tête de liste).
+  Une copie est intégrée aux apps (`ios/Resources/historique.json`, `android/app/src/main/assets/historique.json`) :
+  Réglages › Historique des nouveautés montre tout ; l'alerte de mise à jour lit la version en ligne
+  et affiche ce que la nouvelle version corrige ; après l'installation, l'app montre ce qui a changé.

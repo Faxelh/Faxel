@@ -265,6 +265,11 @@ struct SettingsView: View {
                         .foregroundColor(.primary)
                     }
                     NavigationLink {
+                        ChangelogView()
+                    } label: {
+                        SettingsLabel(title: L("Historique des nouveautés"), icon: "clock.arrow.circlepath", color: .teal)
+                    }
+                    NavigationLink {
                         AppNameView()
                     } label: {
                         SettingsLabel(title: L("Nom de l'application"), icon: "character.cursor.ibeam", color: .purple)
@@ -400,7 +405,7 @@ struct AboutView: View {
                         .frame(width: 110, height: 110)
                         .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
                         .shadow(color: .black.opacity(0.2), radius: 10, y: 4)
-                    Text("Faxel")
+                    Text(AppName.current)
                         .font(.system(size: 30, weight: .bold))
                     Text(L("Version {version}", ["version": version]))
                         .foregroundColor(.secondary)
@@ -427,6 +432,14 @@ struct AboutView: View {
                         .textSelection(.enabled)
                 }
             }
+            Section {
+                Text(L("Toutes les nouveautés et tous les correctifs, de la plus récente à la plus ancienne."))
+                    .font(.system(size: 13))
+                    .foregroundColor(.secondary)
+            } header: {
+                Text(L("Historique des nouveautés"))
+            }
+            ChangeList(entries: Changelog.bundled)
         }
         .navigationTitle(L("À propos"))
         .navigationBarTitleDisplayMode(.inline)

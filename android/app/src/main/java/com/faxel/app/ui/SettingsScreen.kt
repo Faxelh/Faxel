@@ -151,6 +151,7 @@ fun SettingsScreen() {
             }
 
             item { Group(stringResource(R.string.about)) }
+            item { com.faxel.app.update.ChangelogRow() }
             item { com.faxel.app.update.AppNameRow() }
             item { com.faxel.app.update.UpdateSettingsRow() }
             item {
