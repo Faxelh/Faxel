@@ -990,7 +990,7 @@ struct BrowserView: View {
             Spacer(minLength: 4)
             Button {
                 browser.dismissPrompt()
-                downloadPage()
+                downloadPage(queueNow: true)
             } label: {
                 Image(systemName: "checkmark")
                     .font(.system(size: 20, weight: .heavy))
@@ -1105,7 +1105,9 @@ struct BrowserView: View {
         .disabled(!enabled)
     }
 
-    private func downloadPage() {
+    /// `queueNow` : ajouté tout de suite à la file avec la qualité par défaut,
+    /// on reste dans le navigateur pour continuer à défiler et en ajouter d'autres.
+    private func downloadPage(queueNow: Bool = false) {
         editing = false
         browser.pageAddress { link, title in
             guard link.lowercased().hasPrefix("http") else {
@@ -1120,6 +1122,14 @@ struct BrowserView: View {
                 return
             }
             browser.exportCookies()
+            if queueNow {
+                let media = UserDefaults.standard.string(forKey: "defaultMedia") ?? "video"
+                let quality = UserDefaults.standard.string(forKey: "defaultQuality") ?? "Meilleure"
+                let clean = title.replacingOccurrences(of: " - YouTube", with: "")
+                model.quickDownload([["url": link, "title": clean]], media: media,
+                                    quality: media == "audio" ? "Meilleure" : quality)
+                return
+            }
             quick = QuickLink(url: link, title: title)
         }
     }

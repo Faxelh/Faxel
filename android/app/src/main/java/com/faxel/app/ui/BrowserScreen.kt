@@ -73,6 +73,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -326,6 +328,18 @@ fun BrowserScreen(onDownload: () -> Unit, visible: Boolean = true) {
         onDownload()
     }
 
+    val context = LocalContext.current
+    val queuedText = stringResource(R.string.browser_queued)
+
+    /** Ajoute directement à la file de téléchargement : on reste dans le navigateur. */
+    fun queue(link: String) {
+        Browser.dismiss()
+        val media = Prefs.defaultMedia.value
+        val title = Browser.title.removeSuffix(" - YouTube").trim()
+        Engine.download(listOf(Triple(link, title, null)), media, if (media == "audio") BEST else Prefs.defaultQuality.value)
+        android.widget.Toast.makeText(context, queuedText, android.widget.Toast.LENGTH_SHORT).show()
+    }
+
     val canBack = Browser.canGoBack || !Browser.home
     val canDownload = !Browser.home && Browser.url.isNotBlank()
 
@@ -356,7 +370,15 @@ fun BrowserScreen(onDownload: () -> Unit, visible: Boolean = true) {
                 if (canDownload) Brush.linearGradient(listOf(accent, Color(0xFFFF2D60)))
                 else Brush.linearGradient(listOf(Surface2, Surface2)),
             )
-            .clickable(enabled = canDownload) { sendToDownload(Browser.url) },
+            // Toucher : ajouté à la file (on continue à naviguer) ; appui long : choisir la qualité.
+            .pointerInput(canDownload) {
+                if (canDownload) {
+                    detectTapGestures(
+                        onTap = { queue(Browser.url) },
+                        onLongPress = { sendToDownload(Browser.url) },
+                    )
+                }
+            },
         contentAlignment = Alignment.Center,
     ) { Icon(Icons.Rounded.Download, null, tint = if (canDownload) Color.White else Muted) }
 
@@ -447,7 +469,7 @@ fun BrowserScreen(onDownload: () -> Unit, visible: Boolean = true) {
                     Spacer(Modifier.width(10.dp))
                     Text(stringResource(R.string.browser_prompt), color = Color.White, fontSize = 14.sp, modifier = Modifier.weight(1f))
                     TextButton(onClick = { Browser.dismiss() }) { Text(stringResource(R.string.no), color = Muted) }
-                    Button(onClick = { sendToDownload(prompt) }) { Text(stringResource(R.string.yes)) }
+                    Button(onClick = { queue(prompt) }) { Text(stringResource(R.string.yes)) }
                 }
             }
         }

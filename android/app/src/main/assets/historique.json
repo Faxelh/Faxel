@@ -1,5 +1,18 @@
 [
  {
+  "date": "2026-10-15T13:30:00Z",
+  "titre": "Téléchargement depuis le navigateur",
+  "items": [
+   {
+    "texte": "« Voulez-vous télécharger ce contenu ? » › Oui : la vidéo part directement dans la file de téléchargement, vous restez dans le navigateur pour continuer à défiler et en ajouter d'autres"
+   },
+   {
+    "texte": "Bouton de téléchargement du navigateur : toucher = ajouter à la file, appui long = choisir la qualité",
+    "plateforme": "android"
+   }
+  ]
+ },
+ {
   "date": "2026-10-15T13:05:00Z",
   "titre": "Nouveautés visibles",
   "items": [

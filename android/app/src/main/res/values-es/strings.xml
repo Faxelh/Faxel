@@ -183,4 +183,5 @@
     <string name="changelog_empty">Aún no hay historial</string>
     <string name="changelog_continue">Continuar</string>
     <string name="changelog_fixes">Novedades y correcciones:</string>
+    <string name="browser_queued">Añadido a descargas: sigue navegando</string>
 </resources>
