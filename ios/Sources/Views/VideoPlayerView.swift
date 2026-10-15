@@ -44,7 +44,7 @@ struct VideoPlayerView: View {
                 VideoSurface(video: video, fill: video.fill)
                     .ignoresSafeArea()
                 HiddenVolumeView()
-                    .frame(width: 1, height: 1)
+                    .frame(width: 2, height: 2)
                     .allowsHitTesting(false)
 
                 gestureLayer(size: geometry.size)
@@ -320,6 +320,7 @@ struct VideoPlayerView: View {
                         }
                     }
                     .onEnded { _ in
+                        if dragKind == 2 { DeviceControls.endVolumeGesture() }
                         if dragKind == 3, let target = scrubPreview {
                             video.seek(to: target)
                             scheduleHide()

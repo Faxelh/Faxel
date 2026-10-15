@@ -1,5 +1,15 @@
 [
  {
+  "date": "2026-10-15T16:40:00Z",
+  "titre": "Volume du lecteur vidéo",
+  "items": [
+   {
+    "texte": "Le geste vertical à droite règle maintenant vraiment le volume du téléphone",
+    "plateforme": "ios"
+   }
+  ]
+ },
+ {
   "date": "2026-10-15T13:30:00Z",
   "titre": "Téléchargement depuis le navigateur",
   "items": [

@@ -677,31 +677,61 @@ enum DeviceControls {
         set { screen?.brightness = min(1, max(0, newValue)) }
     }
 
-    static weak var volumeSlider: UISlider?
+    /// Vue du volume d'iOS (invisible) : son curseur règle le volume du téléphone.
+    static weak var volumeView: MPVolumeView?
+
+    /// Le curseur est créé par iOS un peu après l'affichage : on le cherche à chaque fois.
+    static var volumeSlider: UISlider? {
+        func find(_ view: UIView) -> UISlider? {
+            if let slider = view as? UISlider { return slider }
+            for sub in view.subviews { if let found = find(sub) { return found } }
+            return nil
+        }
+        return volumeView.flatMap { find($0) }
+    }
+
+    /// Dernière valeur demandée (le curseur d'iOS met un instant à suivre).
+    private static var wanted: Float?
 
     static var volume: Float {
-        get { volumeSlider?.value ?? AVAudioSession.sharedInstance().outputVolume }
+        get { wanted ?? volumeSlider?.value ?? AVAudioSession.sharedInstance().outputVolume }
         set {
             let value = min(1, max(0, newValue))
-            volumeSlider?.setValue(value, animated: false)
-            volumeSlider?.sendActions(for: .valueChanged)
+            wanted = value
+            if let slider = volumeSlider {
+                // Volume du téléphone (comme les boutons latéraux).
+                slider.setValue(value, animated: false)
+                slider.sendActions(for: .valueChanged)
+                slider.sendActions(for: .touchUpInside)
+                VideoPlayerModel.active?.player.volume = 1
+            } else {
+                // Secours : volume de la vidéo elle-même.
+                VideoPlayerModel.active?.player.volume = value
+            }
         }
+    }
+
+    /// Fin du geste : on relit le vrai volume au prochain geste.
+    static func endVolumeGesture() {
+        wanted = nil
     }
 }
 
 /// Réglage du volume système sans afficher le bandeau d'iOS.
 struct HiddenVolumeView: UIViewRepresentable {
     func makeUIView(context: Context) -> MPVolumeView {
-        let view = MPVolumeView(frame: CGRect(x: -100, y: -100, width: 10, height: 10))
-        view.alpha = 0.01
+        let view = MPVolumeView(frame: CGRect(x: 0, y: 0, width: 40, height: 40))
+        // Presque invisible mais bien « affichée » : sinon iOS ignore les changements de volume
+        // et montre son propre bandeau.
+        view.alpha = 0.011
         view.isUserInteractionEnabled = false
-        DispatchQueue.main.async {
-            DeviceControls.volumeSlider = view.subviews.compactMap { $0 as? UISlider }.first
-        }
+        DeviceControls.volumeView = view
         return view
     }
 
-    func updateUIView(_ uiView: MPVolumeView, context: Context) {}
+    func updateUIView(_ uiView: MPVolumeView, context: Context) {
+        DeviceControls.volumeView = uiView
+    }
 }
 
 /// Surface d'affichage de la vidéo (AVPlayerLayer).
