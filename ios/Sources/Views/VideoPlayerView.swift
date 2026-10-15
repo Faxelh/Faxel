@@ -408,14 +408,11 @@ struct VideoPlayerView: View {
     // MARK: - Épisode suivant
 
     private var showNextCard: Bool {
-        guard !touchLocked, video.autoNextEnabled, video.hasNext, !video.repeatOne, !video.cancelAutoNext,
-              !video.sleepAtEnd, video.duration > 30 else { return false }
-        let remaining = video.duration - video.currentTime
-        return remaining > 0 && remaining <= 8
+        !touchLocked && video.nextCountdown != nil
     }
 
     private func nextEpisodeCard(landscape: Bool) -> some View {
-        let remaining = max(0, Int(ceil(video.duration - video.currentTime)))
+        let remaining = video.nextCountdown ?? 0
         let next = video.items.indices.contains(video.index + 1) ? video.items[video.index + 1] : nil
         return VStack {
             Spacer()
@@ -425,6 +422,8 @@ struct VideoPlayerView: View {
                     Text(L("Épisode suivant dans {n} s", ["n": "\(remaining)"]))
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundColor(.white.opacity(0.75))
+                        .contentTransition(.numericText())
+                        .animation(.easeInOut(duration: 0.25), value: remaining)
                     if let next = next {
                         Text(next.title)
                             .font(.system(size: 15, weight: .bold))

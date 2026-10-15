@@ -55,7 +55,7 @@ final class WifiTransfer: ObservableObject {
             }
             self.listener = listener
             listener.start(queue: queue)
-            UIApplication.shared.isIdleTimerDisabled = true
+            ScreenAwake.set("wifi", true)
         } catch {
             self.error = error.localizedDescription
         }
@@ -66,7 +66,7 @@ final class WifiTransfer: ObservableObject {
         listener = nil
         running = false
         current = nil
-        UIApplication.shared.isIdleTimerDisabled = false
+        ScreenAwake.set("wifi", false)
     }
 
     fileprivate func began(_ name: String) {

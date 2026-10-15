@@ -45,7 +45,14 @@ final class VideoPlayerModel: NSObject, ObservableObject, AVPictureInPictureCont
     /// Répéter la vidéo en cours.
     @Published var repeatOne = false
     /// « Épisode suivant » annulé pour cette vidéo.
-    @Published var cancelAutoNext = false
+    @Published var cancelAutoNext = false {
+        didSet { if cancelAutoNext { stopCountdown() } }
+    }
+    /// Compte à rebours « Épisode suivant dans 5, 4, 3, 2, 1 » (en vraies secondes).
+    @Published private(set) var nextCountdown: Int?
+    private var countdownTimer: Timer?
+    /// La vidéo est finie et attend la fin du compte à rebours.
+    private var waitingForNext = false
     /// Minuterie : arrêt à cette heure, ou à la fin de la vidéo.
     @Published private(set) var sleepEnd: Date?
     @Published private(set) var sleepAtEnd = false
@@ -93,12 +100,19 @@ final class VideoPlayerModel: NSObject, ObservableObject, AVPictureInPictureCont
                 guard let self = self else { return }
                 self.isBuffering = status == .waitingToPlayAtSpecifiedRate
                 self.isPlaying = status != .paused
+                // Vidéo en lecture : l'écran ne se met pas en veille.
+                ScreenAwake.set(self.awakeKey, self.isPlaying)
                 self.updateNowPlaying()
             }
         }
     }
 
+    /// Chaque lecteur a sa propre raison de garder l'écran allumé (un autre lecteur
+    /// qui se ferme ne coupe pas celui qui joue).
+    private lazy var awakeKey = "video:\(ObjectIdentifier(self).hashValue)"
+
     deinit {
+        ScreenAwake.set("video:\(ObjectIdentifier(self).hashValue)", false)
         if let observer = timeObserver {
             player.removeTimeObserver(observer)
         }
@@ -119,6 +133,7 @@ final class VideoPlayerModel: NSObject, ObservableObject, AVPictureInPictureCont
 
     private func load() {
         guard let track = current else { return }
+        stopCountdown()
         cancelAutoNext = false
         boosted = false
         let session = AVAudioSession.sharedInstance()
@@ -287,6 +302,61 @@ final class VideoPlayerModel: NSObject, ObservableObject, AVPictureInPictureCont
     }
 
     var hasNext: Bool { index + 1 < items.count }
+
+    private var autoNextAllowed: Bool {
+        autoNextEnabled && hasNext && !repeatOne && !cancelAutoNext && !sleepAtEnd && duration > 30
+    }
+
+    /// Lance le compte à rebours dans les 5 dernières secondes ; l'annule si on recule.
+    /// Le compte est mené par une vraie horloge (5, 4, 3, 2, 1) : il ne reste plus jamais
+    /// bloqué sur un chiffre quand la vidéo s'arrête un peu avant sa durée annoncée.
+    private func updateCountdown() {
+        guard autoNextAllowed else {
+            stopCountdown()
+            return
+        }
+        guard !waitingForNext else { return }
+        let remaining = (duration - currentTime) / Double(max(rate, 0.25))
+        if countdownTimer == nil {
+            if remaining > 0.05 && remaining <= 5 && isPlaying {
+                startCountdown(from: Int(ceil(remaining)))
+            }
+        } else if remaining > 5.5 {
+            // On a reculé dans la vidéo : plus de compte à rebours.
+            stopCountdown()
+        }
+    }
+
+    private func startCountdown(from value: Int) {
+        countdownTimer?.invalidate()
+        nextCountdown = max(1, min(5, value))
+        let timer = Timer(timeInterval: 1, repeats: true) { [weak self] _ in
+            guard let self = self, let count = self.nextCountdown else { return }
+            if !self.waitingForNext && !self.isPlaying {
+                // Vidéo finie sans notification d'AVPlayer : on continue quand même.
+                if self.duration > 0 && self.duration - self.currentTime <= 1.5 {
+                    self.waitingForNext = true
+                } else {
+                    return // en pause : le compte attend
+                }
+            }
+            if count > 1 {
+                self.nextCountdown = count - 1
+            } else {
+                self.stopCountdown()
+                if self.hasNext && !self.cancelAutoNext { self.next() }
+            }
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        countdownTimer = timer
+    }
+
+    private func stopCountdown() {
+        countdownTimer?.invalidate()
+        countdownTimer = nil
+        waitingForNext = false
+        if nextCountdown != nil { nextCountdown = nil }
+    }
     var hasPrevious: Bool { index > 0 }
 
     func next() {
@@ -307,6 +377,7 @@ final class VideoPlayerModel: NSObject, ObservableObject, AVPictureInPictureCont
     }
 
     private func finished() {
+        guard !waitingForNext else { return }
         if repeatOne {
             seek(to: 0)
             player.play()
@@ -322,8 +393,16 @@ final class VideoPlayerModel: NSObject, ObservableObject, AVPictureInPictureCont
         }
         let autoNext = UserDefaults.standard.object(forKey: "autoNextVideo") as? Bool ?? true
         if autoNext && hasNext && !cancelAutoNext {
-            index += 1
-            load()
+            if countdownTimer != nil {
+                // Le compte à rebours continue (2, 1…) puis l'épisode suivant démarre.
+                waitingForNext = true
+            } else if duration > 30 {
+                waitingForNext = true
+                startCountdown(from: 3)
+            } else {
+                index += 1
+                load()
+            }
         } else {
             isPlaying = false
         }
@@ -331,6 +410,7 @@ final class VideoPlayerModel: NSObject, ObservableObject, AVPictureInPictureCont
 
     func close() {
         guard !closed else { return }
+        stopCountdown()
         closed = true
         dismissedForPiP = false
         savePosition()
@@ -339,6 +419,7 @@ final class VideoPlayerModel: NSObject, ObservableObject, AVPictureInPictureCont
         }
         player.pause()
         player.replaceCurrentItem(with: nil)
+        ScreenAwake.set(awakeKey, false)
         if VideoPlayerModel.active === self {
             VideoPlayerModel.active = nil
         }
@@ -354,6 +435,7 @@ final class VideoPlayerModel: NSObject, ObservableObject, AVPictureInPictureCont
             updateNowPlaying()
         }
         refreshSubtitle()
+        updateCountdown()
         if isPlaying && Date().timeIntervalSince(lastSave) > 10 {
             savePosition()
         }

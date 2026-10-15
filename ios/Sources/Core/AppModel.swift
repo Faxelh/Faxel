@@ -415,10 +415,7 @@ final class AppModel: ObservableObject {
 
     private func updateIdleTimer(active: Bool) {
         let keepAwake = UserDefaults.standard.object(forKey: "keepAwake") as? Bool ?? true
-        let wanted = keepAwake && active
-        if UIApplication.shared.isIdleTimerDisabled != wanted {
-            UIApplication.shared.isIdleTimerDisabled = wanted
-        }
+        ScreenAwake.set("downloads", keepAwake && active)
     }
 
     // MARK: - Messages

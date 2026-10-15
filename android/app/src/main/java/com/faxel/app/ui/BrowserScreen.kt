@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
 import android.webkit.CookieManager
+import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
@@ -101,6 +102,50 @@ val sites = listOf(
 
 /** Navigateur intégré : une seule WebView gardée pendant toute la vie de l'app. */
 object Browser {
+    /** Signale à l'app si une vidéo joue dans la page (reels, YouTube…). */
+    private const val AWAKE_SCRIPT = """
+(function () {
+  if (window.__faxelAwake) return; window.__faxelAwake = true;
+  var last = null;
+  function playing() {
+    var list = document.querySelectorAll('video');
+    for (var i = 0; i < list.length; i++) {
+      var v = list[i];
+      if (!v.paused && !v.ended && v.readyState >= 2) return true;
+    }
+    return false;
+  }
+  function report() {
+    var now = playing();
+    if (now || now !== last) { try { FaxelAwake.state(now); } catch (e) {} }
+    last = now;
+  }
+  ['play', 'playing', 'pause', 'ended', 'emptied', 'abort'].forEach(function (name) {
+    document.addEventListener(name, function () { setTimeout(report, 50); }, true);
+  });
+  document.addEventListener('visibilitychange', report);
+  window.__faxelAwakeReport = function () { last = null; report(); };
+  setInterval(report, 2000);
+  report();
+})();
+"""
+
+    /** Vidéo en lecture dans la page : l'écran ne se met pas en veille. */
+    private class AwakeBridge(private val web: WebView) {
+        @JavascriptInterface
+        fun state(playing: Boolean) {
+            web.post {
+                web.removeCallbacks(expire)
+                web.keepScreenOn = playing && web.visibility == View.VISIBLE
+                // La page redonne des nouvelles toutes les 2 s pendant la lecture ;
+                // sans nouvelles depuis 7 s, l'écran peut de nouveau se mettre en veille.
+                if (playing) web.postDelayed(expire, 7_000)
+            }
+        }
+
+        private val expire = Runnable { web.keepScreenOn = false }
+    }
+
     private var view: WebView? = null
     var url by mutableStateOf("")
     var title by mutableStateOf("")
@@ -134,6 +179,7 @@ object Browser {
             displayZoomControls = false
             setSupportMultipleWindows(false)
         }
+        web.addJavascriptInterface(AwakeBridge(web), "FaxelAwake")
         CookieManager.getInstance().setAcceptCookie(true)
         CookieManager.getInstance().setAcceptThirdPartyCookies(web, true)
         web.webViewClient = object : WebViewClient() {
@@ -142,8 +188,13 @@ object Browser {
                 return scheme != "http" && scheme != "https"
             }
 
-            override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) = update(view)
+            override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
+                view.keepScreenOn = false
+                update(view)
+            }
+
             override fun onPageFinished(view: WebView, url: String) {
+                view.evaluateJavascript(AWAKE_SCRIPT, null)
                 update(view)
                 Prefs.visit(url, view.title ?: "")
             }
@@ -153,6 +204,8 @@ object Browser {
         web.webChromeClient = object : WebChromeClient() {
             override fun onProgressChanged(view: WebView, newProgress: Int) {
                 progress = newProgress
+                // Les sites qui chargent sans fin (fil de reels) : le guetteur est posé tôt.
+                if (newProgress >= 60) view.evaluateJavascript(AWAKE_SCRIPT, null)
             }
 
             override fun onReceivedTitle(view: WebView, title: String?) {
@@ -171,6 +224,8 @@ object Browser {
 
     fun release(web: WebView) {
         saved = Bundle().also { web.saveState(it) }
+        web.keepScreenOn = false
+        web.removeJavascriptInterface("FaxelAwake")
         web.stopLoading()
         web.destroy()
         if (view === web) view = null
@@ -179,6 +234,8 @@ object Browser {
     fun setVisible(visible: Boolean) {
         val web = view ?: return
         web.visibility = if (visible) View.VISIBLE else View.INVISIBLE
+        if (!visible) web.keepScreenOn = false
+        else web.evaluateJavascript("window.__faxelAwakeReport && window.__faxelAwakeReport()", null)
         // Onglet caché : la vidéo de la page se met en pause.
         if (visible) web.onResume() else web.onPause()
     }

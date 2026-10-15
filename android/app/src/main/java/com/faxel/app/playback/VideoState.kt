@@ -93,6 +93,8 @@ object VideoState {
         val saved = positions.getLong(files[index].absolutePath, 0L)
         exo.setMediaItems(items, index, if (saved > 10_000) saved else 0L)
         exo.repeatMode = if (repeatOne) Player.REPEAT_MODE_ONE else Player.REPEAT_MODE_OFF
+        handler.removeCallbacks(countdownTick)
+        nextCountdown = null
         exo.pauseAtEndOfMediaItems = false
         exo.setPlaybackSpeed(speed)
         exo.prepare()
@@ -132,6 +134,8 @@ object VideoState {
             title = mediaItem?.mediaMetadata?.title?.toString() ?: ""
             index = player?.currentMediaItemIndex ?: index
             if (reason != Player.MEDIA_ITEM_TRANSITION_REASON_REPEAT) {
+                handler.removeCallbacks(countdownTick)
+                nextCountdown = null
                 cancelAutoNext = false
                 player?.pauseAtEndOfMediaItems = sleepAtEnd
             }
@@ -221,7 +225,54 @@ object VideoState {
     /** « Épisode suivant » annulé : la vidéo s'arrête à la fin au lieu d'enchaîner. */
     fun cancelNext() {
         cancelAutoNext = true
+        stopCountdown()
         player?.pauseAtEndOfMediaItems = true
+    }
+
+    /** Compte à rebours « Épisode suivant dans 5, 4, 3, 2, 1 », mené par une vraie horloge. */
+    var nextCountdown by mutableStateOf<Int?>(null)
+        private set
+
+    private val countdownTick = object : Runnable {
+        override fun run() {
+            val count = nextCountdown ?: return
+            val exo = player ?: return stopCountdown()
+            val duration = exo.duration
+            val atEnd = exo.playbackState == Player.STATE_ENDED ||
+                (duration > 0 && exo.currentPosition >= duration - 1_500)
+            if (!exo.isPlaying && !atEnd) {
+                // En pause : le compte attend.
+                handler.postDelayed(this, 1_000)
+                return
+            }
+            if (count > 1) {
+                nextCountdown = count - 1
+                handler.postDelayed(this, 1_000)
+            } else {
+                stopCountdown()
+                if (exo.hasNextMediaItem() && !cancelAutoNext) {
+                    exo.seekToNextMediaItem()
+                    exo.play()
+                }
+            }
+        }
+    }
+
+    fun startCountdown(seconds: Int) {
+        if (nextCountdown != null) return
+        nextCountdown = seconds.coerceIn(1, 5)
+        // La vidéo attend la fin du compte (au lieu d'enchaîner seule sur « 2 »).
+        player?.pauseAtEndOfMediaItems = true
+        handler.removeCallbacks(countdownTick)
+        handler.postDelayed(countdownTick, 1_000)
+    }
+
+    fun stopCountdown() {
+        handler.removeCallbacks(countdownTick)
+        if (nextCountdown != null) {
+            nextCountdown = null
+            player?.pauseAtEndOfMediaItems = sleepAtEnd || cancelAutoNext
+        }
     }
 
     /** Minuterie : 0 = désactivée, -1 = fin de la vidéo. */
@@ -270,6 +321,8 @@ object VideoState {
     }
 
     fun close() {
+        handler.removeCallbacks(countdownTick)
+        nextCountdown = null
         savePosition()
         player?.run {
             removeListener(listener)

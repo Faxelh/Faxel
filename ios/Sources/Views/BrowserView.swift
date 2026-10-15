@@ -111,6 +111,43 @@ final class BrowserModel: NSObject, ObservableObject, WKNavigationDelegate, WKUI
       }, true);
     })();
     """
+    /// Signale si une vidéo joue dans la page (reels, YouTube…) : l'écran reste allumé.
+    static let awakeWatch = """
+    (function () {
+      if (window.__faxelAwake) return; window.__faxelAwake = true;
+      var id = Math.random().toString(36).slice(2), last = null;
+      function videos(root, out) {
+        var list = root.querySelectorAll('video');
+        for (var i = 0; i < list.length; i++) out.push(list[i]);
+        return out;
+      }
+      function playing() {
+        var list = videos(document, []);
+        for (var i = 0; i < list.length; i++) {
+          var v = list[i];
+          if (!v.paused && !v.ended && v.readyState >= 2) return true;
+        }
+        return false;
+      }
+      function send(now) {
+        try { window.webkit.messageHandlers.faxelAwake.postMessage({ id: id, playing: now }); } catch (e) {}
+      }
+      // Vérifié toutes les 2 s (reels qui défilent, lecteurs qui démarrent sans événement),
+      // et renvoyé à chaque fois pendant la lecture : l'app sait que la page est toujours là.
+      function report() {
+        var now = playing();
+        if (now || now !== last) send(now);
+        last = now;
+      }
+      ['play', 'playing', 'pause', 'ended', 'emptied', 'abort'].forEach(function (name) {
+        document.addEventListener(name, function () { setTimeout(report, 50); }, true);
+      });
+      document.addEventListener('visibilitychange', report);
+      window.addEventListener('pagehide', function () { last = false; send(false); });
+      setInterval(report, 2000);
+      report();
+    })();
+    """
     private var observations: [NSKeyValueObservation] = []
     private var exportWork: DispatchWorkItem?
     private var saveWork: DispatchWorkItem?
@@ -291,6 +328,9 @@ final class BrowserModel: NSObject, ObservableObject, WKNavigationDelegate, WKUI
             let watch = WKUserScript(source: BrowserModel.mediaWatch, injectionTime: .atDocumentStart, forMainFrameOnly: true)
             configuration.userContentController.addUserScript(watch)
             configuration.userContentController.add(WeakScriptHandler(self), name: "faxelMedia")
+            let awake = WKUserScript(source: BrowserModel.awakeWatch, injectionTime: .atDocumentEnd, forMainFrameOnly: false)
+            configuration.userContentController.addUserScript(awake)
+            configuration.userContentController.add(WeakScriptHandler(self), name: "faxelAwake")
         }
         let view = WKWebView(frame: .zero, configuration: configuration)
         view.allowsBackForwardNavigationGestures = true
@@ -395,6 +435,7 @@ final class BrowserModel: NSObject, ObservableObject, WKNavigationDelegate, WKUI
     func close(_ id: UUID) {
         guard let index = tabs.firstIndex(where: { $0.id == id }) else { return }
         let closing = tabs[index].webView
+        ScreenAwake.clear(prefix: "web:\(ObjectIdentifier(closing).hashValue):")
         closing.stopLoading()
         closing.navigationDelegate = nil
         closing.uiDelegate = nil
@@ -590,6 +631,13 @@ final class BrowserModel: NSObject, ObservableObject, WKNavigationDelegate, WKUI
     // MARK: Proposition de téléchargement
 
     func userContentController(_ controller: WKUserContentController, didReceive message: WKScriptMessage) {
+        if message.name == "faxelAwake", let body = message.body as? [String: Any] {
+            // Vidéo en lecture dans une page : pas de mise en veille de l'écran.
+            let view = message.webView.map { "\(ObjectIdentifier($0).hashValue)" } ?? "?"
+            let frame = body["id"] as? String ?? "?"
+            ScreenAwake.set("web:" + view + ":" + frame, body["playing"] as? Bool ?? false, ttl: 7)
+            return
+        }
         guard message.name == "faxelMedia", let body = message.body as? [String: Any] else { return }
         DispatchQueue.main.async { [weak self] in
             self?.videoStarted(body, in: message.webView)
@@ -632,6 +680,8 @@ final class BrowserModel: NSObject, ObservableObject, WKNavigationDelegate, WKUI
     }
 
     func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
+        // Nouvelle page : les vidéos de l'ancienne ne comptent plus.
+        ScreenAwake.clear(prefix: "web:\(ObjectIdentifier(webView).hashValue):")
         sync(webView)
     }
 

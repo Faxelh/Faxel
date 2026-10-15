@@ -383,13 +383,22 @@ fun VideoScreen(onClose: () -> Unit) {
             }
         }
 
-        // Épisode suivant
-        val remaining = duration - position
-        val showNext = !pip && !locked && VideoState.hasNext && !VideoState.repeatOne && !VideoState.cancelAutoNext &&
-            !VideoState.sleepAtEnd && duration > 30_000 && remaining in 1..8_000
-        if (showNext) {
+        // Épisode suivant : 5, 4, 3, 2, 1 en vraies secondes (VideoState mène le compte).
+        val remaining = ((duration - position) / VideoState.speed.coerceAtLeast(0.25f)).toLong()
+        val canNext = VideoState.hasNext && !VideoState.repeatOne && !VideoState.cancelAutoNext &&
+            !VideoState.sleepAtEnd && duration > 30_000
+        LaunchedEffect(canNext, remaining / 500, VideoState.isPlaying) {
+            when {
+                !canNext -> VideoState.stopCountdown()
+                VideoState.nextCountdown == null && VideoState.isPlaying && remaining in 1..5_000 ->
+                    VideoState.startCountdown(((remaining + 999) / 1000).toInt())
+                VideoState.nextCountdown != null && remaining > 5_500 -> VideoState.stopCountdown()
+            }
+        }
+        val countdown = VideoState.nextCountdown
+        if (!pip && !locked && canNext && countdown != null) {
             NextCard(
-                seconds = ((remaining + 999) / 1000).toInt(),
+                seconds = countdown,
                 title = VideoState.files.getOrNull(VideoState.index + 1)?.nameWithoutExtension ?: "",
                 modifier = Modifier.align(Alignment.BottomEnd).navigationBarsPadding().padding(end = 24.dp, bottom = 110.dp),
             )
