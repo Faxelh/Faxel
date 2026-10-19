@@ -2,6 +2,39 @@
 
 **Faxel** est une application pour **iPhone et Android** qui réunit un navigateur avec téléchargement intégré, un lecteur vidéo/audio et une bibliothèque pour ranger ses fichiers, le tout en français. Un seul dépôt sert les deux plateformes.
 
+## 📲 Installation
+
+Faxel n'est pas sur l'App Store ni sur le Play Store : on l'installe soi-même avec un fichier d'installation, à télécharger dans les [**Releases**](https://github.com/Faxelh/Faxel/releases) du dépôt.
+
+### 🤖 Android
+
+1. Sur votre téléphone, ouvrez la page [**Releases**](https://github.com/Faxelh/Faxel/releases) et téléchargez le fichier **`.apk`** de la dernière version.
+2. Ouvrez le fichier téléchargé (depuis la notification ou l'app *Fichiers*).
+3. Si Android demande une autorisation, activez **« Autoriser depuis cette source »** pour votre navigateur ou votre gestionnaire de fichiers, puis revenez en arrière.
+4. Touchez **Installer**. Si Play Protect affiche un avertissement, choisissez **« Installer quand même »**.
+5. Ouvrez **Faxel** : c'est prêt.
+
+### 🍎 iPhone
+
+Il faut un ordinateur (Windows ou Mac) pour la première installation, avec **Sideloadly**.
+
+1. Téléchargez le fichier **`.ipa`** de la dernière version dans les [**Releases**](https://github.com/Faxelh/Faxel/releases).
+2. Installez [**Sideloadly**](https://sideloadly.io/) sur votre ordinateur.
+   *Sous Windows, installez aussi iTunes et iCloud depuis le site d'Apple (pas depuis le Microsoft Store).*
+3. Branchez votre iPhone avec un câble et touchez **Se fier** sur l'iPhone si la question s'affiche.
+4. Ouvrez Sideloadly, glissez le fichier `.ipa` dans la fenêtre et saisissez votre identifiant Apple.
+5. Cliquez sur **Start** et attendez la fin de l'installation.
+6. Sur l'iPhone, allez dans **Réglages › Général › VPN et gestion de l'appareil**, touchez votre identifiant Apple puis **Faire confiance**.
+7. Sur iOS 16 ou plus récent, activez aussi **Réglages › Confidentialité et sécurité › Mode développeur**, puis redémarrez l'iPhone.
+8. Ouvrez **Faxel**.
+
+> ⚠️ Avec un identifiant Apple gratuit, l'app expire au bout de **7 jours** : il faut la réinstaller avec Sideloadly. Pour éviter cela, utilisez **SideStore** ou **AltStore**, qui renouvellent l'app automatiquement.
+
+### ✅ Vérifier que ça marche
+
+Allez dans **Réglages** de l'application : le numéro de version s'affiche (par exemple `2026.10.3`).
+
+
 ## ✨ Fonctionnalités
 
 ### ⬇️ Téléchargement
