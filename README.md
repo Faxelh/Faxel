@@ -1,10 +1,22 @@
-# Faxel
-Application iPhone **et** Android, dans un seul dépôt.
-## Mettre à jour (un seul geste)
-- Au démarrage (une fois par jour), Faxel cherche une nouvelle version et la propose.
-- **Réglages › Mises à jour** : rechercher maintenant.
-- **iPhone** : avec SideStore / AltStore, la mise à jour s'installe toute seule
-  (source : `https://github.com/Faxelh/Faxel/releases/download/ios-source/source.json`).
-  Avec Sideloadly : « Télécharger l'IPA », puis l'installer par-dessus (fichiers conservés).
-- **Android** : « Mettre à jour » télécharge l'APK et ouvre l'installation
-  (Android demande une seule fois d'autoriser « Installer des applis inconnues »).
+# 👋 Salut, je suis Faxel Kwadio
+
+Développeur autodidacte, je crée des applications utiles pour mon quotidien et celui des autres.
+
+## 🚀 Mes projets
+
+| Projet | Description |
+|---|---|
+| [**Elara**](https://github.com/Faxelh/elara) | Application iPhone : lecteur vidéo/audio, dossier privé, compression, transfert Wi‑Fi |
+| [**Music**](https://github.com/Faxelh/Music) | Outil pour organiser et renuméroter ses fichiers musicaux |
+
+## 🛠️ Technologies
+
+![Swift](https://img.shields.io/badge/Swift-FA7343?style=flat&logo=swift&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3776AB?style=flat&logo=python&logoColor=white)
+![Django](https://img.shields.io/badge/Django-092E20?style=flat&logo=django&logoColor=white)
+![Git](https://img.shields.io/badge/Git-F05032?style=flat&logo=git&logoColor=white)
+![VS Code](https://img.shields.io/badge/VS_Code-007ACC?style=flat&logo=visualstudiocode&logoColor=white)
+
+## 📫 Me contacter
+
+- GitHub : [@Faxelh](https://github.com/Faxelh)
