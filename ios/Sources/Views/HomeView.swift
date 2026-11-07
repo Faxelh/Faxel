@@ -8,17 +8,72 @@ struct HomeView: View {
     @ObservedObject private var library = MediaLibrary.shared
     @State private var importing = false
     @State private var showCompressor = false
+    @AppStorage("faxelProfileName") private var profileName = "Faxel"
+    @AppStorage("faxelProfilePhotoPath") private var profilePhotoPath = ""
 
     private var greeting: String {
         let hour = Calendar.current.component(.hour, from: Date())
-        if hour < 5 || hour >= 18 { return L("Bonsoir") }
-        return L("Bonjour")
+        if hour < 5 || hour >= 18 { return L("Bonsoir,") }
+        if hour >= 12 { return L("Bon après-midi,") }
+        return L("Bonjour,")
+    }
+
+    private var dateHeading: String {
+        let formatter = DateFormatter()
+        formatter.locale = Lang.locale
+        formatter.dateFormat = "EEEE d MMMM"
+        return formatter.string(from: Date()).uppercased(with: Lang.locale)
+    }
+
+    @ViewBuilder
+    private var profileImage: some View {
+        if !profilePhotoPath.isEmpty, let image = UIImage(contentsOfFile: profilePhotoPath) {
+            Image(uiImage: image).resizable().scaledToFill()
+        } else {
+            Image("Logo").resizable().scaledToFill()
+        }
+    }
+
+    private var welcomeHeader: some View {
+        HStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .leading, spacing: 10) {
+                Text(dateHeading)
+                    .font(.system(size: 17, weight: .bold))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                (Text(greeting) + Text("\n" + profileName))
+                    .font(.system(size: 36, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+            Button { model.showSearch = true } label: {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 23, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 64, height: 64)
+                    .background(Color(.secondarySystemBackground), in: Circle())
+            }
+            .buttonStyle(.plain)
+            Button { model.tab = .settings } label: {
+                profileImage
+                    .frame(width: 72, height: 72)
+                    .clipShape(Circle())
+                    .overlay(Circle().stroke(Color.white.opacity(0.7), lineWidth: 2))
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 18)
+        .padding(.top, 24)
+        .padding(.bottom, 6)
     }
 
     var body: some View {
         NavigationStack(path: $model.homePath) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 28) {
+                    welcomeHeader
                     if let error = model.engineError {
                         EngineErrorCard(message: error)
                             .padding(.horizontal, 16)
@@ -55,14 +110,9 @@ struct HomeView: View {
                 .padding(.vertical, 8)
                 .padding(.bottom, 20)
             }
-            .navigationTitle(greeting)
+            .navigationTitle("")
             .toolbar {
-                ToolbarItemGroup(placement: .navigationBarTrailing) {
-                    Button {
-                        model.showSearch = true
-                    } label: {
-                        CircleIcon(systemName: "magnifyingglass")
-                    }
+                ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
                         importing = true
                     } label: {

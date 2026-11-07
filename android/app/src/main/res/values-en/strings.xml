@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="home_greeting_morning">Good morning,</string>
+    <string name="home_greeting_afternoon">Good afternoon,</string>
+    <string name="home_greeting_evening">Good evening,</string>
     <string name="bass">Bass</string>
     <string name="eq_unavailable">Equalizer unavailable on this phone. Play a sound and try again.</string>
     <string name="equalizer">Equalizer</string>

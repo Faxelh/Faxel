@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="home_greeting_morning">Bonjour,</string>
+    <string name="home_greeting_afternoon">Bon après-midi,</string>
+    <string name="home_greeting_evening">Bonsoir,</string>
     <string name="bass">Basses</string>
     <string name="eq_unavailable">Égaliseur indisponible sur ce téléphone. Lancez un son puis réessayez.</string>
     <string name="equalizer">Égaliseur</string>

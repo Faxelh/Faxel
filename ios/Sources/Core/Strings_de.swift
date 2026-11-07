@@ -1,6 +1,9 @@
 // Traductions allemandes de l'interface (texte français → traduction).
 
 let DE: [String: String] = [
+    "Bonjour,": "Guten Morgen,",
+    "Bon après-midi,": "Guten Tag,",
+    "Bonsoir,": "Guten Abend,",
     "Accueil": "Start",
     "Actualiser la bibliothèque": "Mediathek aktualisieren",
     "Adresse ou recherche": "Adresse oder Suche",

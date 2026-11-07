@@ -18,10 +18,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.Language
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.VideoLibrary
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -33,27 +35,45 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import com.faxel.app.R
 import com.faxel.app.data.Prefs
 import coil.compose.AsyncImage
 
 @Composable
-fun HomeScreen(onNavigate: (Tab) -> Unit) {
+fun HomeScreen(onNavigate: (Tab) -> Unit, onSearch: () -> Unit) {
     LazyColumn(
         Modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item {
-            Row(Modifier.fillMaxWidth().padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(54.dp).clip(CircleShape).background(Surface2), contentAlignment = Alignment.Center) {
-                    if (Prefs.profilePhoto.value.isNotBlank()) AsyncImage(Prefs.profilePhoto.value, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
-                    else Icon(Icons.Rounded.Person, null, tint = Muted, modifier = Modifier.size(32.dp))
+            Row(Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        SimpleDateFormat("EEEE d MMMM", Locale.getDefault()).format(Date()).uppercase(Locale.getDefault()),
+                        color = Muted, fontSize = 16.sp, fontWeight = FontWeight.Bold,
+                    )
+                    val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+                    val greetingRes = when {
+                        hour < 5 || hour >= 18 -> R.string.home_greeting_evening
+                        hour >= 12 -> R.string.home_greeting_afternoon
+                        else -> R.string.home_greeting_morning
+                    }
+                    val greeting = stringResource(greetingRes)
+                    Text("$greeting\n${Prefs.profileName.value}", color = androidx.compose.ui.graphics.Color.White,
+                        fontSize = 34.sp, lineHeight = 38.sp, fontWeight = FontWeight.Bold)
                 }
-                Spacer(Modifier.size(12.dp))
-                Column {
-                    Text(Prefs.profileName.value, color = androidx.compose.ui.graphics.Color.White, fontSize = 25.sp, fontWeight = FontWeight.Bold)
-                    Text(stringResource(R.string.home_subtitle), color = Muted, fontSize = 14.sp)
+                IconButton(onClick = onSearch, modifier = Modifier.size(58.dp).clip(CircleShape).background(Surface2)) {
+                    Icon(Icons.Rounded.Search, stringResource(R.string.search_title), tint = androidx.compose.ui.graphics.Color.White, modifier = Modifier.size(28.dp))
+                }
+                Spacer(Modifier.size(10.dp))
+                Box(Modifier.size(66.dp).clip(CircleShape).background(Surface2).clickable { onNavigate(Tab.Settings) }, contentAlignment = Alignment.Center) {
+                    if (Prefs.profilePhoto.value.isNotBlank()) AsyncImage(Prefs.profilePhoto.value, null, contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize().clip(CircleShape))
+                    else Icon(Icons.Rounded.Person, null, tint = Muted, modifier = Modifier.size(38.dp))
                 }
             }
         }

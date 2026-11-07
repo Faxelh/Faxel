@@ -73,44 +73,9 @@ struct RootView: View {
         jobStore.jobs.filter(\.isFailed).count
     }
 
-    /// L'onglet Navigateur ne change pas d'écran : il fait glisser le navigateur depuis la droite.
-    private var tabSelection: Binding<AppTab> {
-        Binding(
-            get: { model.tab },
-            set: { newTab in
-                if newTab == .browser {
-                    withAnimation(.spring(response: 0.42, dampingFraction: 0.9)) { model.showBrowser = true }
-                } else {
-                    model.tab = newTab
-                }
-            }
-        )
-    }
-
     var body: some View {
-        TabView(selection: tabSelection) {
-            HomeView()
-                .safeAreaInset(edge: .bottom) { MiniPlayer { model.showNowPlaying = true } }
-                .tabItem { Label(L("Accueil"), systemImage: "house.fill") }
-                .tag(AppTab.home)
-            LibraryView()
-                .safeAreaInset(edge: .bottom) { MiniPlayer { model.showNowPlaying = true } }
-                .tabItem { Label(L("Bibliothèque"), systemImage: "square.stack.fill") }
-                .tag(AppTab.library)
-            DownloadView()
-                .safeAreaInset(edge: .bottom) { MiniPlayer { model.showNowPlaying = true } }
-                .tabItem { Label(L("Télécharger"), systemImage: "arrow.down.circle.fill") }
-                .badge(activeCount)
-                .tag(AppTab.download)
-            SettingsView()
-                .safeAreaInset(edge: .bottom) { MiniPlayer { model.showNowPlaying = true } }
-                .tabItem { Label(L("Réglages"), systemImage: "gearshape.fill") }
-                .tag(AppTab.settings)
-            Color.clear
-                .tabItem { Label(L("Navigateur"), systemImage: "globe") }
-                .tag(AppTab.browser)
-        }
-        .toolbar(.hidden, for: .tabBar)
+        mainTabs
+        .safeAreaInset(edge: .bottom) { MiniPlayer { model.showNowPlaying = true } }
         .safeAreaInset(edge: .bottom, spacing: 0) { faxelDock }
         .overlay {
             if model.showBrowser {
@@ -170,6 +135,16 @@ struct RootView: View {
             if tab != .library {
                 model.lockVault()
             }
+        }
+    }
+
+    private var mainTabs: some View {
+        ZStack {
+            HomeView().opacity(model.tab == .home || model.tab == .browser ? 1 : 0)
+                .allowsHitTesting(model.tab == .home || model.tab == .browser)
+            LibraryView().opacity(model.tab == .library ? 1 : 0).allowsHitTesting(model.tab == .library)
+            DownloadView().opacity(model.tab == .download ? 1 : 0).allowsHitTesting(model.tab == .download)
+            SettingsView().opacity(model.tab == .settings ? 1 : 0).allowsHitTesting(model.tab == .settings)
         }
     }
 

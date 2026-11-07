@@ -5,7 +5,7 @@ import android.content.ContentValues
 import android.content.Context
 import android.content.pm.ActivityInfo
 import android.graphics.Bitmap
-import android.media.AudioManager
+import android.media.audiofx.LoudnessEnhancer
 import android.os.Build
 import android.os.Environment
 import android.os.Handler
@@ -144,8 +144,12 @@ fun VideoScreen(onClose: () -> Unit) {
     var notice by remember { mutableStateOf<String?>(null) }
     var watermarkFile by remember { mutableStateOf<File?>(null) }
     var surface by remember { mutableStateOf<SurfaceView?>(null) }
-
-    val audio = remember { context.getSystemService(Context.AUDIO_SERVICE) as AudioManager }
+    var videoVolume by remember(player) { mutableFloatStateOf(1f) }
+    val loudnessEnhancer = remember(player?.audioSessionId) {
+        player?.audioSessionId?.takeIf { it > 0 }?.let { sessionId ->
+            runCatching { LoudnessEnhancer(sessionId).apply { enabled = true } }.getOrNull()
+        }
+    }
 
     BackHandler(enabled = !pip) {
         when {
@@ -169,6 +173,10 @@ fun VideoScreen(onClose: () -> Unit) {
             activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
             window?.let { w -> w.attributes = w.attributes.apply { screenBrightness = -1f } }
         }
+    }
+
+    DisposableEffect(loudnessEnhancer) {
+        onDispose { runCatching { loudnessEnhancer?.release() } }
     }
 
     // Position (barre de progression, épisode suivant).
@@ -297,10 +305,7 @@ fun VideoScreen(onClose: () -> Unit) {
                                     if (abs(total.x) < 18 && abs(total.y) < 18) return@detectDragGestures
                                     if (abs(total.y) > abs(total.x)) {
                                         kind = if (startX < widthPx / 2) 1 else 2
-                                        startLevel = if (kind == 1) currentBrightness(activity) else {
-                                            audio.getStreamVolume(AudioManager.STREAM_MUSIC).toFloat() /
-                                                audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC).coerceAtLeast(1)
-                                        }
+                                        startLevel = if (kind == 1) currentBrightness(activity) else videoVolume
                                     } else {
                                         kind = 3
                                         gestureStart = VideoState.player?.currentPosition ?: 0L
@@ -309,15 +314,18 @@ fun VideoScreen(onClose: () -> Unit) {
                                 }
                                 when (kind) {
                                     1, 2 -> {
-                                        val level = (startLevel - total.y / (heightPx * 0.6f)).coerceIn(0f, 1f)
+                                        val maxLevel = if (kind == 1) 1f else 2f
+                                        val level = (startLevel - total.y / (heightPx * 0.6f) * maxLevel).coerceIn(0f, maxLevel)
                                         if (kind == 1) {
                                             activity?.window?.let { window ->
                                                 window.attributes = window.attributes.apply { screenBrightness = level.coerceAtLeast(0.01f) }
                                             }
                                             hudLeft = level
                                         } else {
-                                            val max = audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
-                                            audio.setStreamVolume(AudioManager.STREAM_MUSIC, (level * max).toInt(), 0)
+                                            videoVolume = level
+                                            player?.volume = level.coerceAtMost(1f)
+                                            val gainMb = if (level > 1f) (2000f * kotlin.math.log10(level)).toInt() else 0
+                                            runCatching { loudnessEnhancer?.setTargetGain(gainMb) }
                                             hudRight = level
                                         }
                                     }
@@ -355,7 +363,7 @@ fun VideoScreen(onClose: () -> Unit) {
         hudLeft?.let { VerticalHud(it, Icons.Rounded.BrightnessMedium, Modifier.align(Alignment.CenterStart).padding(start = 36.dp)) }
         hudRight?.let {
             VerticalHud(it, if (it == 0f) Icons.Rounded.VolumeOff else Icons.Rounded.VolumeUp,
-                Modifier.align(Alignment.CenterEnd).padding(end = 36.dp))
+                Modifier.align(Alignment.CenterEnd).padding(end = 36.dp), maxValue = 2f)
         }
 
         // Avance / recul en glissant
@@ -587,7 +595,7 @@ private fun capture(context: Context, surface: SurfaceView?, done: (Boolean) -> 
 }
 
 @Composable
-private fun VerticalHud(value: Float, icon: ImageVector, modifier: Modifier) {
+private fun VerticalHud(value: Float, icon: ImageVector, modifier: Modifier, maxValue: Float = 1f) {
     Column(
         modifier.clip(RoundedCornerShape(26.dp)).background(Color.Black.copy(alpha = 0.6f)).padding(vertical = 14.dp).width(52.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -596,7 +604,7 @@ private fun VerticalHud(value: Float, icon: ImageVector, modifier: Modifier) {
         Spacer(Modifier.height(8.dp))
         Box(Modifier.width(8.dp).height(150.dp).clip(RoundedCornerShape(4.dp)).background(Color.White.copy(alpha = 0.25f)),
             contentAlignment = Alignment.BottomCenter) {
-            Box(Modifier.width(8.dp).height((150 * value).coerceAtLeast(6f).dp).clip(RoundedCornerShape(4.dp)).background(Color.White))
+            Box(Modifier.width(8.dp).height((150 * (value / maxValue).coerceIn(0f, 1f)).coerceAtLeast(6f).dp).clip(RoundedCornerShape(4.dp)).background(Color.White))
         }
         Spacer(Modifier.height(8.dp))
         Icon(icon, null, tint = Color.White, modifier = Modifier.size(20.dp))

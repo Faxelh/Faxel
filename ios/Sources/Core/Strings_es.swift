@@ -1,6 +1,9 @@
 // Traductions espagnoles de l'interface (texte français → traduction).
 
 let ES: [String: String] = [
+    "Bonjour,": "Buenos días,",
+    "Bon après-midi,": "Buenas tardes,",
+    "Bonsoir,": "Buenas noches,",
     "Accueil": "Inicio",
     "Actualiser la bibliothèque": "Actualizar biblioteca",
     "Adresse ou recherche": "Dirección o búsqueda",

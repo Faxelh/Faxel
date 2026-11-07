@@ -626,6 +626,7 @@ struct VideosView: View {
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
+            .contentShape(Rectangle())
         }
     }
 }
@@ -724,12 +725,14 @@ struct FolderCard: View {
                 .padding(10)
             }
             .frame(width: 118, height: 168)
+            .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .stroke(selected ? Color.brand : Color.white.opacity(0.08), lineWidth: selected ? 3 : 1)
             )
-            .scaleEffect(selected ? 1 : 0.96)
+            // Garder l'image et sa zone tactile de la même taille : le scale
+            // rendait les cartes voisines trompeuses lors d'un appui rapide.
             .shadow(color: .black.opacity(0.3), radius: selected ? 10 : 4, y: 4)
         }
         .buttonStyle(.plain)

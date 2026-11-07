@@ -265,12 +265,12 @@ def _missing(path):
 def op_toggle_favorite(args):
     entry = args.get("entry") or {}
     path = entry.get("filepath") or ""
-    if _missing(path):
-        return {"error": "missing"}
     favorite_uid, _vault = _uids()
     if S.playlists.has_item(favorite_uid, path):
         S.playlists.remove_item(favorite_uid, path)
         return {"favorite": False}
+    if _missing(path):
+        return {"error": "missing"}
     S.playlists.add_item(favorite_uid, path, title=entry.get("title"), thumbnail=entry.get("thumbnail"),
                          duration=entry.get("duration"))
     return {"favorite": True}

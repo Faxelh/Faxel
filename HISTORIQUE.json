@@ -1,5 +1,19 @@
 [
   {
+    "date": "2026-11-07T15:39:00Z",
+    "titre": "Accueil, vidéos et navigation améliorés",
+    "items": [
+      { "texte": "Accueil : date, salutation selon l'heure, recherche et photo du profil", "plateforme": "ios" },
+      { "texte": "Accueil : date, salutation selon l'heure, recherche et photo du profil", "plateforme": "android" },
+      { "texte": "Navigation iPhone en capsule sans libellés système sous les icônes", "plateforme": "ios" },
+      { "texte": "Les favoris peuvent être retirés même si leur fichier a été déplacé ou supprimé", "plateforme": "ios" },
+      { "texte": "Compression vidéo : choix de qualité et estimation de taille", "plateforme": "ios" },
+      { "texte": "Sous-titres : choix de la langue parlée avant la génération locale", "plateforme": "ios" },
+      { "texte": "Faxel réserve son temps d'arrière-plan dès le lancement d'un téléchargement", "plateforme": "ios" },
+      { "texte": "Le geste de volume du lecteur vidéo monte jusqu'à 200 %", "plateforme": "android" }
+    ]
+  },
+  {
     "date": "2026-11-07T15:00:00Z",
     "titre": "Lecteur musical et navigation unifiés",
     "items": [

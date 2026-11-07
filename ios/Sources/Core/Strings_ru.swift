@@ -1,6 +1,9 @@
 // Traductions russes de l'interface (texte français → traduction).
 
 let RU: [String: String] = [
+    "Bonjour,": "Доброе утро,",
+    "Bon après-midi,": "Добрый день,",
+    "Bonsoir,": "Добрый вечер,",
     "Accueil": "Главная",
     "Actualiser la bibliothèque": "Обновить медиатеку",
     "Adresse ou recherche": "Адрес или поиск",

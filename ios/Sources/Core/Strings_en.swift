@@ -2,6 +2,9 @@
 // Fichier généré : chaque L("…") du code doit avoir sa ligne ici.
 
 let EN: [String: String] = [
+    "Bonjour,": "Good morning,",
+    "Bon après-midi,": "Good afternoon,",
+    "Bonsoir,": "Good evening,",
     "Accueil": "Home",
     "Actualiser la bibliothèque": "Refresh library",
     "Adresse ou recherche": "Address or search",

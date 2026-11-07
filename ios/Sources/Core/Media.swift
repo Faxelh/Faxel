@@ -60,13 +60,20 @@ extension PhotoSaver {
 
 /// Compression des vidéos (720p) et des sons (AAC) avec AVFoundation.
 enum MediaCompressor {
-    static func compressVideo(source: URL, target: URL, completion: @escaping (Bool) -> Void) {
+    static func compressVideo(source: URL, target: URL,
+                              presetName requestedPreset: String = AVAssetExportPreset1280x720,
+                              completion: @escaping (Bool) -> Void) {
         let asset = AVURLAsset(url: source)
-        var preset = AVAssetExportPresetMediumQuality
+        var preset = requestedPreset
         if let track = asset.tracks(withMediaType: .video).first {
             let size = track.naturalSize.applying(track.preferredTransform)
-            if min(abs(size.width), abs(size.height)) > 720 {
-                preset = AVAssetExportPreset1280x720
+            let shortEdge = min(abs(size.width), abs(size.height))
+            if preset == AVAssetExportPreset1280x720 && shortEdge <= 720 {
+                preset = AVAssetExportPresetMediumQuality
+            } else if preset == AVAssetExportPreset960x540 && shortEdge <= 540 {
+                preset = AVAssetExportPresetMediumQuality
+            } else if preset == AVAssetExportPreset640x480 && shortEdge <= 480 {
+                preset = AVAssetExportPresetLowQuality
             }
         }
         guard let export = AVAssetExportSession(asset: asset, presetName: preset) else {

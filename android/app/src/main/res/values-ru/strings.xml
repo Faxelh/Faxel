@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="home_greeting_morning">Доброе утро,</string>
+    <string name="home_greeting_afternoon">Добрый день,</string>
+    <string name="home_greeting_evening">Добрый вечер,</string>
     <string name="bass">Басы</string>
     <string name="eq_unavailable">Эквалайзер недоступен. Включите звук и попробуйте снова.</string>
     <string name="equalizer">Эквалайзер</string>

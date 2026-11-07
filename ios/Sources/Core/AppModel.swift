@@ -89,6 +89,7 @@ final class AppModel: ObservableObject {
     private var libraryRev = -1
     private var analysisToken = UUID()
     private var backgroundTask: UIBackgroundTaskIdentifier = .invalid
+    private var pendingDownloadAdds = 0
     private var searchToken = UUID()
     private weak var audio: AudioPlayer?
     private var lastRescan = Date.distantPast
@@ -185,6 +186,9 @@ final class AppModel: ObservableObject {
             let newJobs = (result["jobs"] as? [[String: Any]] ?? []).map { Job($0) }
             if newJobs != self.jobStore.jobs {
                 self.jobStore.jobs = newJobs
+            }
+            if !newJobs.contains(where: { $0.active }) && self.pendingDownloadAdds == 0 {
+                self.endBackgroundWork()
             }
             for event in result["events"] as? [[String: Any]] ?? [] {
                 self.handle(event)
@@ -624,8 +628,10 @@ final class AppModel: ObservableObject {
         }
         let args: [String: Any] = ["items": items, "media_type": media,
                                    "quality": media == "audio" ? "Meilleure" : quality]
+        reserveBackgroundDownload()
         engine.run("import", args) { [weak self] result in
             guard let self = self else { return }
+            self.pendingDownloadAdds = max(0, self.pendingDownloadAdds - 1)
             let count = Int(jsonDouble(result["count"]) ?? 0)
             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
             self.show(L("{count} téléchargement(s) ajouté(s) à la file.", ["count": "\(count)"]), .ok)
@@ -675,8 +681,10 @@ final class AppModel: ObservableObject {
             show(L("Le moteur démarre, réessayez dans un instant."), .warn)
             return
         }
+        reserveBackgroundDownload()
         engine.run("import", ["items": items, "media_type": media, "quality": quality]) { [weak self] result in
             guard let self = self else { return }
+            self.pendingDownloadAdds = max(0, self.pendingDownloadAdds - 1)
             let count = Int(jsonDouble(result["count"]) ?? 0)
             self.show(L("{count} téléchargement(s) ajouté(s) à la file.", ["count": "\(count)"]), .ok)
             self.poll()
@@ -731,8 +739,10 @@ final class AppModel: ObservableObject {
         }
         let args: [String: Any] = ["items": [["url": result.url, "title": result.title]], "media_type": media,
                                    "quality": media == "audio" ? "Meilleure" : quality]
+        reserveBackgroundDownload()
         engine.run("import", args) { [weak self] _ in
             guard let self = self else { return }
+            self.pendingDownloadAdds = max(0, self.pendingDownloadAdds - 1)
             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
             self.show(L("Ajouté aux téléchargements : {title}", ["title": result.title]), .ok)
             self.poll()
@@ -817,13 +827,14 @@ final class AppModel: ObservableObject {
     }
 
     func toggleFavorite(_ track: Track) {
-        guard checkExists(track) else { return }
         engine.run("toggle_favorite", ["entry": track.raw]) { [weak self] result in
             guard let self = self else { return }
             if jsonBool(result["favorite"]) {
                 self.show(L("Ajouté aux favoris."), .ok)
             } else if result["error"] == nil {
                 self.show(L("Retiré des favoris."), .info)
+            } else if result["error"] == "missing" {
+                self.show(L("Fichier introuvable (supprimé ou déplacé)."), .warn)
             }
             UISelectionFeedbackGenerator().selectionChanged()
             self.refreshLibrary()
@@ -1057,12 +1068,18 @@ final class AppModel: ObservableObject {
         }
     }
 
-    /// Laisse quelques minutes aux téléchargements quand l'app passe en arrière-plan.
+    /// Réserve le temps d'arrière-plan au moment où le téléchargement est lancé.
+    /// iOS peut alors laisser le moteur terminer avant de suspendre l'app.
     private func beginBackgroundWork() {
-        guard backgroundTask == .invalid, jobs.contains(where: { $0.active }) else { return }
+        guard backgroundTask == .invalid, pendingDownloadAdds > 0 || jobs.contains(where: { $0.active }) else { return }
         backgroundTask = UIApplication.shared.beginBackgroundTask(withName: "Faxel downloads") { [weak self] in
             self?.endBackgroundWork()
         }
+    }
+
+    private func reserveBackgroundDownload() {
+        pendingDownloadAdds += 1
+        beginBackgroundWork()
     }
 
     private func endBackgroundWork() {
@@ -1073,7 +1090,7 @@ final class AppModel: ObservableObject {
 
     // MARK: - Compression
 
-    func compress(_ track: Track) {
+    func compress(_ track: Track, videoPreset: String = AVAssetExportPreset1280x720) {
         guard checkExists(track) else { return }
         if track.isFolder {
             show(L("Rien à compresser dans un dossier de photos."), .info)
@@ -1115,7 +1132,7 @@ final class AppModel: ObservableObject {
             }
         }
         if isVideo {
-            MediaCompressor.compressVideo(source: source, target: target, completion: finish)
+            MediaCompressor.compressVideo(source: source, target: target, presetName: videoPreset, completion: finish)
         } else {
             MediaCompressor.compressAudio(source: source, target: target, bitrate: 96_000, completion: finish)
         }

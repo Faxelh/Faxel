@@ -150,7 +150,7 @@ fun FaxelRoot() {
                 if (tab != Tab.Browser) {
                     Box(Modifier.fillMaxSize().background(Color(0xFF0B0B0F)).blockTouches()) {
                         when (tab) {
-                            Tab.Home -> HomeScreen(onNavigate = { tab = it })
+                            Tab.Home -> HomeScreen(onNavigate = { tab = it }, onSearch = { searchOpen = true })
                             Tab.Download -> DownloadScreen(onSearch = { searchOpen = true })
                             Tab.Library -> LibraryScreen(onOpenAudio = { audioOpen = true })
                             Tab.Settings -> SettingsScreen()

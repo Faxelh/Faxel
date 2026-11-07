@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="home_greeting_morning">Buenos días,</string>
+    <string name="home_greeting_afternoon">Buenas tardes,</string>
+    <string name="home_greeting_evening">Buenas noches,</string>
     <string name="bass">Graves</string>
     <string name="eq_unavailable">Ecualizador no disponible. Reproduce un audio e inténtalo de nuevo.</string>
     <string name="equalizer">Ecualizador</string>

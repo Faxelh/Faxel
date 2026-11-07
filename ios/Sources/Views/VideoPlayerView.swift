@@ -13,6 +13,7 @@ struct VideoPlayerView: View {
 
     @AppStorage("subtitleSize") private var subtitleSize = 2
     @AppStorage("subtitleBackground") private var subtitleBackground = true
+    @AppStorage("videoSpeechLanguage") private var videoSpeechLanguage = "fr-FR"
     @AppStorage("autoLandscape") private var autoLandscape = true
 
     @State private var controlsVisible = true
@@ -252,7 +253,7 @@ struct VideoPlayerView: View {
         generatingSubtitles = true
         showControls(autoHide: false)
         showNotice(L("Génération des sous-titres sur cet iPhone…"))
-        AISubtitleGenerator.generate(from: track.fileURL, localeIdentifier: Lang.code) { result in
+        AISubtitleGenerator.generate(from: track.fileURL, localeIdentifier: videoSpeechLanguage) { result in
             generatingSubtitles = false
             switch result {
             case .success(let url):
@@ -644,6 +645,25 @@ struct VideoPlayerView: View {
                 }
             }
             Section {
+                Menu {
+                    ForEach([
+                        ("fr-FR", "Français"), ("en-US", "English"), ("ru-RU", "Русский"),
+                        ("es-ES", "Español"), ("de-DE", "Deutsch"), ("pt-BR", "Português"),
+                        ("it-IT", "Italiano"), ("ar-SA", "العربية"), ("zh-CN", "中文")
+                    ], id: \.0) { language in
+                        Button {
+                            videoSpeechLanguage = language.0
+                        } label: {
+                            if videoSpeechLanguage == language.0 {
+                                Label(language.1, systemImage: "checkmark")
+                            } else {
+                                Text(language.1)
+                            }
+                        }
+                    }
+                } label: {
+                    Label(L("Langue parlée : {language}", ["language": speechLanguageName]), systemImage: "waveform")
+                }
                 Button {
                     generateSubtitles()
                 } label: {
@@ -700,6 +720,21 @@ struct VideoPlayerView: View {
                 .frame(width: 40, height: 40)
         }
         .simultaneousGesture(TapGesture().onEnded { hideWork?.cancel() })
+    }
+
+    private var speechLanguageName: String {
+        switch videoSpeechLanguage {
+        case "fr-FR": return "Français"
+        case "en-US": return "English"
+        case "ru-RU": return "Русский"
+        case "es-ES": return "Español"
+        case "de-DE": return "Deutsch"
+        case "pt-BR": return "Português"
+        case "it-IT": return "Italiano"
+        case "ar-SA": return "العربية"
+        case "zh-CN": return "中文"
+        default: return "Français"
+        }
     }
 
     private var moreMenu: some View {

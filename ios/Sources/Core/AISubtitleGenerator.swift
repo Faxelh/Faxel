@@ -21,7 +21,7 @@ enum AISubtitleGenerator {
 
         var errorDescription: String? {
             switch self {
-            case .unsupportedLanguage: return "La transcription hors ligne n'est pas disponible pour cette langue sur cet iPhone."
+            case .unsupportedLanguage: return "Le modèle de reconnaissance hors ligne n'est pas disponible pour cette langue sur cet iPhone."
             case .permissionDenied: return "Autorisez la reconnaissance vocale de Faxel dans Réglages pour générer les sous-titres."
             case .audioExtraction: return "Faxel n'a pas pu extraire le son de cette vidéo."
             case .noSpeech: return "Aucune parole n'a été reconnue dans cette vidéo."
