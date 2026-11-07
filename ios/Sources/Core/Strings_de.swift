@@ -1,6 +1,16 @@
 // Traductions allemandes de l'interface (texte français → traduction).
 
 let DE: [String: String] = [
+    "Grille 2 × 2": "Raster 2 × 2",
+    "Grille 4 × 4": "Raster 4 × 4",
+    "Grille 8 × 8": "Raster 8 × 8",
+    "Liste": "Liste",
+    "Liste détaillée": "Detaillierte Liste",
+    "Créer un dossier avec ces téléchargements": "Ordner für diese Downloads erstellen",
+    "Nouveau dossier": "Neuer Ordner",
+    "Nom du dossier": "Ordnername",
+    "Dossier créé : {name}": "Ordner erstellt: {name}",
+    "Les éléments visibles seront regroupés dans ce dossier virtuel.": "Die sichtbaren Elemente werden in diesem virtuellen Ordner gruppiert.",
     "Bonjour,": "Guten Morgen,",
     "Bon après-midi,": "Guten Tag,",
     "Bonsoir,": "Guten Abend,",

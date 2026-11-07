@@ -43,7 +43,7 @@ import com.faxel.app.data.Prefs
 import coil.compose.AsyncImage
 
 @Composable
-fun HomeScreen(onNavigate: (Tab) -> Unit, onSearch: () -> Unit) {
+fun HomeScreen(onNavigate: (Tab) -> Unit, onSearch: () -> Unit, onCompression: () -> Unit) {
     LazyColumn(
         Modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 24.dp),
@@ -81,6 +81,7 @@ fun HomeScreen(onNavigate: (Tab) -> Unit, onSearch: () -> Unit) {
         item { HomeAction(Icons.Rounded.VideoLibrary, stringResource(R.string.tab_library), stringResource(R.string.home_library_hint)) { onNavigate(Tab.Library) } }
         item { HomeAction(Icons.Rounded.Language, stringResource(R.string.tab_browser), stringResource(R.string.home_browser_hint)) { onNavigate(Tab.Browser) } }
         item { HomeAction(Icons.Rounded.Settings, stringResource(R.string.tab_settings), stringResource(R.string.home_settings_hint)) { onNavigate(Tab.Settings) } }
+        item { HomeAction(Icons.Rounded.VideoLibrary, stringResource(R.string.home_compress), stringResource(R.string.home_compress_hint), onCompression) }
     }
 }
 

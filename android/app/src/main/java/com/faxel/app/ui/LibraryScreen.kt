@@ -104,6 +104,7 @@ object LibraryModel {
     var watermark by mutableStateOf<String?>(null)
     var query by mutableStateOf("")
     var searching by mutableStateOf(false)
+    var videoLayout by mutableStateOf("grid2")
     /** Sélection de plusieurs éléments (clé = chemin du fichier). */
     val selection = SelectionState()
 }
@@ -175,6 +176,13 @@ fun LibraryScreen(onOpenAudio: () -> Unit) {
         query.isEmpty() || it.title.contains(query, true) || it.uploader.contains(query, true) || it.folder.contains(query, true)
     }
     val minCell = if (Layout.wide) 200.dp else 160.dp
+    val gridCells = when {
+        model.section != Section.Videos -> GridCells.Adaptive(minCell)
+        model.videoLayout == "list" || model.videoLayout == "detail" -> GridCells.Fixed(1)
+        model.videoLayout == "grid4" -> GridCells.Fixed(4)
+        model.videoLayout == "grid8" -> GridCells.Fixed(8)
+        else -> GridCells.Fixed(2)
+    }
 
     // Ce que « Tout sélectionner » prend dans la vue actuelle.
     val selectable = when (model.section) {
@@ -191,7 +199,7 @@ fun LibraryScreen(onOpenAudio: () -> Unit) {
 
     Box(Modifier.fillMaxSize()) {
     LazyVerticalGrid(
-        GridCells.Adaptive(minCell),
+        gridCells,
         Modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = 12.dp, end = 12.dp, bottom = if (selection.active) 150.dp else 24.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -287,6 +295,7 @@ private fun LazyGridScope.full(content: @Composable () -> Unit) {
 @Composable
 private fun Header(context: Context, canSelect: Boolean) {
     val model = LibraryModel
+    var layoutMenu by remember { mutableStateOf(false) }
     Column {
         val title = when {
             model.folder != null -> File(model.folder!!).name
@@ -303,6 +312,23 @@ private fun Header(context: Context, canSelect: Boolean) {
                 modifier = Modifier.weight(1f).padding(start = 4.dp))
             IconButton(onClick = { model.searching = !model.searching; if (!model.searching) model.query = "" }) {
                 Icon(Icons.Rounded.Search, null, tint = accent)
+            }
+            if (model.section == Section.Videos) {
+                Box {
+                    IconButton(onClick = { layoutMenu = true }) { Icon(Icons.Rounded.MoreVert, null, tint = accent) }
+                    DropdownMenu(expanded = layoutMenu, onDismissRequest = { layoutMenu = false }) {
+                        listOf("grid2", "grid4", "grid8", "list", "detail").forEach { mode ->
+                            val label = when (mode) {
+                                "grid4" -> stringResource(R.string.layout_grid4)
+                                "grid8" -> stringResource(R.string.layout_grid8)
+                                "list" -> stringResource(R.string.layout_list)
+                                "detail" -> stringResource(R.string.layout_detail)
+                                else -> stringResource(R.string.layout_grid2)
+                            }
+                            DropdownMenuItem(text = { Text(label) }, onClick = { model.videoLayout = mode; layoutMenu = false })
+                        }
+                    }
+                }
             }
             if (canSelect || model.selection.active) {
                 IconButton(onClick = { if (model.selection.active) model.selection.finish() else model.selection.start() }) {
@@ -374,12 +400,30 @@ private fun LazyGridScope.videos(all: List<Entry>, context: Context) {
 private fun VideoCard(entry: Entry, list: List<Entry>, context: Context) {
     var menu by remember { mutableStateOf(false) }
     val selection = LibraryModel.selection
+    val listMode = LibraryModel.videoLayout == "list" || LibraryModel.videoLayout == "detail"
     Column(
-        Modifier.clip(RoundedCornerShape(14.dp)).combinedClickable(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).combinedClickable(
             onClick = { if (selection.active) selection.toggle(entry.path) else openEntry(context, entry, list) {} },
             onLongClick = { if (selection.active) selection.toggle(entry.path) else selection.start(entry.path) },
         ),
     ) {
+        if (listMode) {
+            Row(Modifier.padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.width(108.dp)) {
+                    Thumb(entry.thumbnail, entry.path, modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f).clip(RoundedCornerShape(10.dp)))
+                    if (selection.active) SelectionCheck(selection.isSelected(entry.path), Modifier.align(Alignment.TopStart).padding(5.dp))
+                }
+                Column(Modifier.weight(1f).padding(start = 10.dp)) {
+                    Text(entry.title, color = Color.White, fontSize = 14.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    Text(listOf(entry.platformName, formatSize(entry.filesize)).filter { it.isNotBlank() }.joinToString(" · "), color = Muted, fontSize = 12.sp, maxLines = 1)
+                    if (LibraryModel.videoLayout == "detail") Text(entry.path, color = Muted, fontSize = 11.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                }
+                Box {
+                    IconButton(onClick = { menu = true }, modifier = Modifier.size(36.dp)) { Icon(Icons.Rounded.MoreVert, null, tint = Muted) }
+                    EntryMenu(entry, menu) { menu = false }
+                }
+            }
+        } else {
         Box {
             Thumb(entry.thumbnail, entry.path, modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f))
             if (selection.active) {
@@ -406,6 +450,7 @@ private fun VideoCard(entry: Entry, list: List<Entry>, context: Context) {
                 IconButton(onClick = { menu = true }, modifier = Modifier.size(32.dp)) { Icon(Icons.Rounded.MoreVert, null, tint = Muted) }
                 EntryMenu(entry, menu) { menu = false }
             }
+        }
         }
     }
 }

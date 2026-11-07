@@ -1,6 +1,16 @@
 // Traductions espagnoles de l'interface (texte français → traduction).
 
 let ES: [String: String] = [
+    "Grille 2 × 2": "Cuadrícula 2 × 2",
+    "Grille 4 × 4": "Cuadrícula 4 × 4",
+    "Grille 8 × 8": "Cuadrícula 8 × 8",
+    "Liste": "Lista",
+    "Liste détaillée": "Lista detallada",
+    "Créer un dossier avec ces téléchargements": "Crear una carpeta para estas descargas",
+    "Nouveau dossier": "Nueva carpeta",
+    "Nom du dossier": "Nombre de la carpeta",
+    "Dossier créé : {name}": "Carpeta creada: {name}",
+    "Les éléments visibles seront regroupés dans ce dossier virtuel.": "Los elementos visibles se agruparán en esta carpeta virtual.",
     "Bonjour,": "Buenos días,",
     "Bon après-midi,": "Buenas tardes,",
     "Bonsoir,": "Buenas noches,",

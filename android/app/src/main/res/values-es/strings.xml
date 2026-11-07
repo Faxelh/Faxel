@@ -3,6 +3,13 @@
     <string name="home_greeting_morning">Buenos días,</string>
     <string name="home_greeting_afternoon">Buenas tardes,</string>
     <string name="home_greeting_evening">Buenas noches,</string>
+    <string name="home_compress">Comprimir un vídeo</string>
+    <string name="home_compress_hint">Reducir el tamaño y conservar el original</string>
+    <string name="layout_grid2">Cuadrícula 2 × 2</string>
+    <string name="layout_grid4">Cuadrícula 4 × 4</string>
+    <string name="layout_grid8">Cuadrícula 8 × 8</string>
+    <string name="layout_list">Lista</string>
+    <string name="layout_detail">Lista detallada</string>
     <string name="bass">Graves</string>
     <string name="eq_unavailable">Ecualizador no disponible. Reproduce un audio e inténtalo de nuevo.</string>
     <string name="equalizer">Ecualizador</string>

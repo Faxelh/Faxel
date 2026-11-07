@@ -98,6 +98,7 @@ fun FaxelRoot() {
     var tab by rememberSaveable { mutableStateOf(Tab.Home) }
     var audioOpen by rememberSaveable { mutableStateOf(false) }
     var searchOpen by rememberSaveable { mutableStateOf(false) }
+    var compressionOpen by rememberSaveable { mutableStateOf(false) }
     val snackbar = remember { SnackbarHostState() }
     val context = LocalContext.current
 
@@ -150,7 +151,7 @@ fun FaxelRoot() {
                 if (tab != Tab.Browser) {
                     Box(Modifier.fillMaxSize().background(Color(0xFF0B0B0F)).blockTouches()) {
                         when (tab) {
-                            Tab.Home -> HomeScreen(onNavigate = { tab = it }, onSearch = { searchOpen = true })
+                            Tab.Home -> HomeScreen(onNavigate = { tab = it }, onSearch = { searchOpen = true }, onCompression = { compressionOpen = true })
                             Tab.Download -> DownloadScreen(onSearch = { searchOpen = true })
                             Tab.Library -> LibraryScreen(onOpenAudio = { audioOpen = true })
                             Tab.Settings -> SettingsScreen()
@@ -221,6 +222,7 @@ fun FaxelRoot() {
         }
 
         if (VideoState.open) VideoScreen(onClose = { VideoState.close() })
+        if (compressionOpen) CompressionScreen(onClose = { compressionOpen = false })
     }
 
     StorageAccessDialog()

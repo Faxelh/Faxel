@@ -40,6 +40,7 @@ final class AppModel: ObservableObject {
     let jobStore = JobStore()
     var jobs: [Job] { jobStore.jobs }
     @Published private(set) var compressing: Set<String> = []
+    @Published private(set) var compressionProgress: [String: Double] = [:]
 
     // Écran Télécharger
     @Published var linkText = UserDefaults.standard.string(forKey: "linkText") ?? "" {
@@ -1112,10 +1113,12 @@ final class AppModel: ObservableObject {
         }
         let before = fileSize(track.path)
         compressing.insert(track.path)
+        compressionProgress[track.path] = 0
         show(L("Compression de « {title} »…", ["title": track.title]), .info)
         let finish: (Bool) -> Void = { [weak self] ok in
             guard let self = self else { return }
             self.compressing.remove(track.path)
+            self.compressionProgress[track.path] = nil
             let after = fileSize(target.path)
             guard ok, after > 0 else {
                 try? FileManager.default.removeItem(at: target)
@@ -1132,7 +1135,9 @@ final class AppModel: ObservableObject {
             }
         }
         if isVideo {
-            MediaCompressor.compressVideo(source: source, target: target, presetName: videoPreset, completion: finish)
+            MediaCompressor.compressVideo(source: source, target: target, presetName: videoPreset,
+                                          progress: { [weak self] value in self?.compressionProgress[track.path] = value },
+                                          completion: finish)
         } else {
             MediaCompressor.compressAudio(source: source, target: target, bitrate: 96_000, completion: finish)
         }

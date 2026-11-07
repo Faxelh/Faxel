@@ -62,6 +62,7 @@ extension PhotoSaver {
 enum MediaCompressor {
     static func compressVideo(source: URL, target: URL,
                               presetName requestedPreset: String = AVAssetExportPreset1280x720,
+                              progress: ((Double) -> Void)? = nil,
                               completion: @escaping (Bool) -> Void) {
         let asset = AVURLAsset(url: source)
         var preset = requestedPreset
@@ -83,9 +84,16 @@ enum MediaCompressor {
         export.outputURL = target
         export.outputFileType = .mp4
         export.shouldOptimizeForNetworkUse = true
+        let progressTimer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { _ in
+            DispatchQueue.main.async { progress?(Double(export.progress)) }
+        }
         export.exportAsynchronously {
             let ok = export.status == .completed
-            DispatchQueue.main.async { completion(ok) }
+            DispatchQueue.main.async {
+                progressTimer.invalidate()
+                if ok { progress?(1) }
+                completion(ok)
+            }
         }
     }
 

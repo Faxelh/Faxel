@@ -486,7 +486,7 @@ struct SongsView: View {
 struct VideosView: View {
     @EnvironmentObject var model: AppModel
     @ObservedObject private var library = MediaLibrary.shared
-    @AppStorage("videosGrid") private var grid = true
+    @AppStorage("videosLayout") private var layout = "grid2"
     @AppStorage("videosFolder") private var folder = ""
     @State private var query = ""
     @State private var picking: Track?
@@ -534,8 +534,8 @@ struct VideosView: View {
                     EmptyState(icon: "film", title: query.isEmpty ? L("Aucune vidéo") : L("Aucun résultat"),
                                subtitle: query.isEmpty ? L("Ajoutez des vidéos avec 3uTools, l'app Fichiers, ou téléchargez-les.") : "")
                         .padding(.top, 40)
-                } else if grid {
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 160), spacing: 14)], alignment: .leading, spacing: 18) {
+                } else if let columnCount = gridColumnCount {
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: columnCount), alignment: .leading, spacing: 12) {
                         ForEach(Array(list.enumerated()), id: \.element.id) { index, track in
                             GeometryReader { geometry in
                                 Button {
@@ -557,21 +557,29 @@ struct VideosView: View {
                                     VideoPreview(track: track)
                                 }
                             }
-                            .frame(height: 150)
+                            .frame(height: max(84, (UIScreen.main.bounds.width - CGFloat(columnCount + 1) * 8 - 32) / CGFloat(columnCount) * 0.58 + 58))
                         }
                     }
                     .padding(16)
                 } else {
                     LazyVStack(spacing: 0) {
                         ForEach(Array(list.enumerated()), id: \.element.id) { index, track in
-                            HStack(spacing: 10) {
-                                if selection.active {
-                                    SelectionCheck(selected: selection.ids.contains(track.id))
+                            VStack(alignment: .leading, spacing: 0) {
+                                HStack(spacing: 10) {
+                                    if selection.active {
+                                        SelectionCheck(selected: selection.ids.contains(track.id))
+                                    }
+                                    TrackRow(track: track, onTap: {
+                                        if selection.active { selection.toggle(track.id) } else { model.play(list, start: index) }
+                                    }) {
+                                        TrackActions(track: track, picking: $picking, deleting: $deleting)
+                                    }
                                 }
-                                TrackRow(track: track, onTap: {
-                                    if selection.active { selection.toggle(track.id) } else { model.play(list, start: index) }
-                                }) {
-                                    TrackActions(track: track, picking: $picking, deleting: $deleting)
+                                if layout == "detail" {
+                                    Text("\(track.platformName.isEmpty ? L("Vidéo") : track.platformName) · \(Fmt.size(fileSize(track.path))) · \(track.fileURL.lastPathComponent)")
+                                        .font(.system(size: 12)).foregroundStyle(.secondary).lineLimit(2)
+                                        .padding(.leading, selection.active ? 38 : 0)
+                                        .padding(.bottom, 8)
                                 }
                             }
                             .padding(.horizontal, 16)
@@ -598,10 +606,14 @@ struct VideosView: View {
                 SelectButton(selection: selection)
             }
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button {
-                    withAnimation { grid.toggle() }
+                Menu {
+                    Button { layout = "grid2" } label: { Label(L("Grille 2 × 2"), systemImage: layout == "grid2" ? "checkmark" : "square.grid.2x2") }
+                    Button { layout = "grid4" } label: { Label(L("Grille 4 × 4"), systemImage: layout == "grid4" ? "checkmark" : "square.grid.3x3") }
+                    Button { layout = "grid8" } label: { Label(L("Grille 8 × 8"), systemImage: layout == "grid8" ? "checkmark" : "circle.grid.3x3") }
+                    Button { layout = "list" } label: { Label(L("Liste"), systemImage: layout == "list" ? "checkmark" : "list.bullet") }
+                    Button { layout = "detail" } label: { Label(L("Liste détaillée"), systemImage: layout == "detail" ? "checkmark" : "list.bullet.rectangle") }
                 } label: {
-                    CircleIcon(systemName: grid ? "list.bullet" : "square.grid.2x2")
+                    CircleIcon(systemName: gridColumnCount == nil ? "list.bullet" : "square.grid.2x2")
                 }
             }
         }
@@ -609,6 +621,15 @@ struct VideosView: View {
             if !folder.isEmpty && !groups.contains(where: { $0.name == folder }) { folder = "" }
         }
         .trackSheets(picking: $picking, deleting: $deleting)
+    }
+
+    private var gridColumnCount: Int? {
+        switch layout {
+        case "grid4": return 4
+        case "grid8": return 8
+        case "list", "detail": return nil
+        default: return 2
+        }
     }
 
     /// Dossiers en grandes cartes d'aperçu (comme les onglets d'Amerigo).
@@ -977,6 +998,8 @@ struct DownloadsListView: View {
     @State private var confirmClear = false
     @State private var previewItems: [URL] = []
     @State private var previewURL: URL?
+    @State private var creatingFolder = false
+    @State private var newFolderName = ""
 
     private var shown: [Track] {
         let list = model.downloads
@@ -1002,19 +1025,26 @@ struct DownloadsListView: View {
                            subtitle: L("Collez un lien dans l'onglet Télécharger."))
                     .listRowSeparator(.hidden)
             }
-            ForEach(Array(list.enumerated()), id: \.element.id) { index, track in
-                TrackRow(track: track, onTap: { open(track, in: list, at: index) }) {
-                    TrackActions(track: track, picking: $picking, deleting: $deleting)
-                }
-                .contextMenu {
-                    TrackActions(track: track, picking: $picking, deleting: $deleting)
-                }
-                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                    Button(role: .destructive) {
-                        deleting = track
-                    } label: {
-                        Label(L("Supprimer"), systemImage: "trash")
+            ForEach(downloadFolderPaths(list), id: \.self) { path in
+                Section {
+                    let folderItems = list.filter { $0.fileURL.deletingLastPathComponent().path == path }
+                    ForEach(Array(folderItems.enumerated()), id: \.element.id) { index, track in
+                        TrackRow(track: track, onTap: { open(track, in: folderItems, at: index) }) {
+                            TrackActions(track: track, picking: $picking, deleting: $deleting)
+                        }
+                        .contextMenu {
+                            TrackActions(track: track, picking: $picking, deleting: $deleting)
+                        }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button(role: .destructive) {
+                                deleting = track
+                            } label: {
+                                Label(L("Supprimer"), systemImage: "trash")
+                            }
+                        }
                     }
+                } header: {
+                    Text(URL(fileURLWithPath: path).lastPathComponent)
                 }
             }
         }
@@ -1023,6 +1053,12 @@ struct DownloadsListView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Menu {
+                    Button {
+                        newFolderName = ""
+                        creatingFolder = true
+                    } label: {
+                        Label(L("Créer un dossier avec ces téléchargements"), systemImage: "folder.badge.plus")
+                    }
                     Button(role: .destructive) {
                         confirmClear = true
                     } label: {
@@ -1039,8 +1075,24 @@ struct DownloadsListView: View {
         } message: {
             Text(L("La liste sera vidée puis reconstruite à partir des fichiers présents. Les fichiers, playlists et le Coffre ne changent pas."))
         }
+        .alert(L("Nouveau dossier"), isPresented: $creatingFolder) {
+            TextField(L("Nom du dossier"), text: $newFolderName)
+            Button(L("Annuler"), role: .cancel) {}
+            Button(L("Créer")) {
+                let folder = VirtualFolderStore.shared.create(newFolderName)
+                VirtualFolderStore.shared.add(list.map(\.path), to: folder.id)
+                model.show(L("Dossier créé : {name}", ["name": folder.name]), .ok)
+            }
+        } message: {
+            Text(L("Les éléments visibles seront regroupés dans ce dossier virtuel."))
+        }
         .trackSheets(picking: $picking, deleting: $deleting)
         .quickLookPreview($previewURL, in: previewItems)
+    }
+
+    private func downloadFolderPaths(_ tracks: [Track]) -> [String] {
+        Array(Set(tracks.map { $0.fileURL.deletingLastPathComponent().path }))
+            .sorted { URL(fileURLWithPath: $0).lastPathComponent.localizedStandardCompare(URL(fileURLWithPath: $1).lastPathComponent) == .orderedAscending }
     }
 
     private func open(_ track: Track, in list: [Track], at index: Int) {

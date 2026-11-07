@@ -2,6 +2,16 @@
 // Fichier généré : chaque L("…") du code doit avoir sa ligne ici.
 
 let EN: [String: String] = [
+    "Grille 2 × 2": "2 × 2 grid",
+    "Grille 4 × 4": "4 × 4 grid",
+    "Grille 8 × 8": "8 × 8 grid",
+    "Liste": "List",
+    "Liste détaillée": "Detailed list",
+    "Créer un dossier avec ces téléchargements": "Create a folder for these downloads",
+    "Nouveau dossier": "New folder",
+    "Nom du dossier": "Folder name",
+    "Dossier créé : {name}": "Folder created: {name}",
+    "Les éléments visibles seront regroupés dans ce dossier virtuel.": "The visible items will be grouped in this virtual folder.",
     "Bonjour,": "Good morning,",
     "Bon après-midi,": "Good afternoon,",
     "Bonsoir,": "Good evening,",

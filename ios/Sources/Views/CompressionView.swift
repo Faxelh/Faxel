@@ -67,7 +67,7 @@ struct CompressionView: View {
                                 model.compress(track, videoPreset: selectedPreset)
                             } label: {
                                 HStack(spacing: 8) {
-                                    if model.compressing.contains(track.path) { ProgressView().tint(.white) }
+                                    if model.compressing.contains(track.path) { ProgressView(value: model.compressionProgress[track.path] ?? 0).tint(Color.brand) }
                                     else { Image(systemName: "arrow.down.right.and.arrow.up.left") }
                                     Text(model.compressing.contains(track.path) ? L("Compression en cours…") : L("Compresser la vidéo"))
                                 }

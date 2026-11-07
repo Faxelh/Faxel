@@ -3,6 +3,13 @@
     <string name="home_greeting_morning">Bonjour,</string>
     <string name="home_greeting_afternoon">Bon après-midi,</string>
     <string name="home_greeting_evening">Bonsoir,</string>
+    <string name="home_compress">Compresser une vidéo</string>
+    <string name="home_compress_hint">Réduire la taille d’une vidéo en gardant l’original</string>
+    <string name="layout_grid2">Grille 2 × 2</string>
+    <string name="layout_grid4">Grille 4 × 4</string>
+    <string name="layout_grid8">Grille 8 × 8</string>
+    <string name="layout_list">Liste</string>
+    <string name="layout_detail">Liste détaillée</string>
     <string name="bass">Basses</string>
     <string name="eq_unavailable">Égaliseur indisponible sur ce téléphone. Lancez un son puis réessayez.</string>
     <string name="equalizer">Égaliseur</string>

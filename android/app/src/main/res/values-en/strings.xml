@@ -3,6 +3,13 @@
     <string name="home_greeting_morning">Good morning,</string>
     <string name="home_greeting_afternoon">Good afternoon,</string>
     <string name="home_greeting_evening">Good evening,</string>
+    <string name="home_compress">Compress a video</string>
+    <string name="home_compress_hint">Make a smaller copy and keep the original</string>
+    <string name="layout_grid2">Grid 2 × 2</string>
+    <string name="layout_grid4">Grid 4 × 4</string>
+    <string name="layout_grid8">Grid 8 × 8</string>
+    <string name="layout_list">List</string>
+    <string name="layout_detail">Detailed list</string>
     <string name="bass">Bass</string>
     <string name="eq_unavailable">Equalizer unavailable on this phone. Play a sound and try again.</string>
     <string name="equalizer">Equalizer</string>

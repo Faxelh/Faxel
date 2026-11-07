@@ -8,6 +8,10 @@
       { "texte": "Navigation iPhone en capsule sans libellés système sous les icônes", "plateforme": "ios" },
       { "texte": "Les favoris peuvent être retirés même si leur fichier a été déplacé ou supprimé", "plateforme": "ios" },
       { "texte": "Compression vidéo : choix de qualité et estimation de taille", "plateforme": "ios" },
+      { "texte": "Compression vidéo : résolutions 1080p, 720p, 480p et 360p avec suivi de progression", "plateforme": "android" },
+      { "texte": "Bibliothèque vidéo : grilles 2, 4 ou 8 colonnes, liste et liste détaillée", "plateforme": "ios" },
+      { "texte": "Bibliothèque vidéo : grilles 2, 4 ou 8 colonnes, liste et liste détaillée", "plateforme": "android" },
+      { "texte": "Téléchargés regroupés par dossier source avec création de dossiers virtuels personnalisés", "plateforme": "ios" },
       { "texte": "Sous-titres : choix de la langue parlée avant la génération locale", "plateforme": "ios" },
       { "texte": "Faxel réserve son temps d'arrière-plan dès le lancement d'un téléchargement", "plateforme": "ios" },
       { "texte": "Le geste de volume du lecteur vidéo monte jusqu'à 200 %", "plateforme": "android" }

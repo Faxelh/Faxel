@@ -1,6 +1,16 @@
 // Traductions russes de l'interface (texte français → traduction).
 
 let RU: [String: String] = [
+    "Grille 2 × 2": "Сетка 2 × 2",
+    "Grille 4 × 4": "Сетка 4 × 4",
+    "Grille 8 × 8": "Сетка 8 × 8",
+    "Liste": "Список",
+    "Liste détaillée": "Подробный список",
+    "Créer un dossier avec ces téléchargements": "Создать папку для этих загрузок",
+    "Nouveau dossier": "Новая папка",
+    "Nom du dossier": "Название папки",
+    "Dossier créé : {name}": "Папка создана: {name}",
+    "Les éléments visibles seront regroupés dans ce dossier virtuel.": "Показанные элементы будут сгруппированы в этой виртуальной папке.",
     "Bonjour,": "Доброе утро,",
     "Bon après-midi,": "Добрый день,",
     "Bonsoir,": "Добрый вечер,",
