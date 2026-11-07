@@ -487,6 +487,7 @@ struct VideosView: View {
     @EnvironmentObject var model: AppModel
     @ObservedObject private var library = MediaLibrary.shared
     @AppStorage("videosLayout") private var layout = "grid2"
+    @AppStorage("videosSort") private var sort = "recent"
     @AppStorage("videosFolder") private var folder = ""
     @State private var query = ""
     @State private var picking: Track?
@@ -494,7 +495,12 @@ struct VideosView: View {
     @StateObject private var selection = SelectionModel()
 
     private var allVideos: [Track] {
-        model.videos.sorted { $0.addedDate > $1.addedDate }
+        switch sort {
+        case "title": return model.videos.sorted { library.title($0).localizedCaseInsensitiveCompare(library.title($1)) == .orderedAscending }
+        case "size": return model.videos.sorted { ($0.filesize ?? fileSize($0.path)) > ($1.filesize ?? fileSize($1.path)) }
+        case "duration": return model.videos.sorted { ($0.duration ?? 0) > ($1.duration ?? 0) }
+        default: return model.videos.sorted { $0.addedDate > $1.addedDate }
+        }
     }
 
     /// Les vidéos rangées par dossier (Facebook, TikTok, YouTube, Importés › …).
@@ -514,7 +520,7 @@ struct VideosView: View {
         var list = all
         if !folder.isEmpty {
             list = list.filter { VideoFolder.name(of: $0) == folder }
-            list = VideoFolder.episodeOrder(list)
+            if sort == "recent" { list = VideoFolder.episodeOrder(list) }
         }
         let text = query.trimmingCharacters(in: .whitespaces).lowercased()
         guard !text.isEmpty else { return list }
@@ -607,6 +613,12 @@ struct VideosView: View {
             }
             ToolbarItem(placement: .navigationBarTrailing) {
                 Menu {
+                    Menu(L("Trier par")) {
+                        Button { sort = "recent" } label: { Label(L("Ajout récent"), systemImage: sort == "recent" ? "checkmark" : "clock") }
+                        Button { sort = "title" } label: { Label(L("Titre"), systemImage: sort == "title" ? "checkmark" : "textformat") }
+                        Button { sort = "size" } label: { Label(L("Taille"), systemImage: sort == "size" ? "checkmark" : "externaldrive") }
+                        Button { sort = "duration" } label: { Label(L("Durée"), systemImage: sort == "duration" ? "checkmark" : "timer") }
+                    }
                     Button { layout = "grid2" } label: { Label(L("Grille 2 × 2"), systemImage: layout == "grid2" ? "checkmark" : "square.grid.2x2") }
                     Button { layout = "grid4" } label: { Label(L("Grille 4 × 4"), systemImage: layout == "grid4" ? "checkmark" : "square.grid.3x3") }
                     Button { layout = "grid8" } label: { Label(L("Grille 8 × 8"), systemImage: layout == "grid8" ? "checkmark" : "circle.grid.3x3") }
@@ -993,6 +1005,7 @@ struct ArtistDetailView: View {
 struct DownloadsListView: View {
     @EnvironmentObject var model: AppModel
     @AppStorage("downloadsFilter") private var filter = "all"
+    @AppStorage("downloadsSort") private var sort = "recent"
     @State private var picking: Track?
     @State private var deleting: Track?
     @State private var confirmClear = false
@@ -1002,11 +1015,17 @@ struct DownloadsListView: View {
     @State private var newFolderName = ""
 
     private var shown: [Track] {
-        let list = model.downloads
+        let filtered: [Track]
         switch filter {
-        case "video": return list.filter { $0.kind != "audio" }
-        case "audio": return list.filter { $0.kind == "audio" }
-        default: return list
+        case "video": filtered = model.downloads.filter { $0.kind != "audio" }
+        case "audio": filtered = model.downloads.filter { $0.kind == "audio" }
+        default: filtered = model.downloads
+        }
+        switch sort {
+        case "title": return filtered.sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
+        case "size": return filtered.sorted { fileSize($0.path) > fileSize($1.path) }
+        case "duration": return filtered.sorted { ($0.duration ?? 0) > ($1.duration ?? 0) }
+        default: return filtered.sorted { $0.addedDate > $1.addedDate }
         }
     }
 
@@ -1019,6 +1038,13 @@ struct DownloadsListView: View {
                 Text(L("Audio")).tag("audio")
             }
             .pickerStyle(.segmented)
+            .listRowSeparator(.hidden)
+            Picker(L("Trier par"), selection: $sort) {
+                Text(L("Ajout récent")).tag("recent")
+                Text(L("Titre")).tag("title")
+                Text(L("Taille")).tag("size")
+                Text(L("Durée")).tag("duration")
+            }
             .listRowSeparator(.hidden)
             if list.isEmpty {
                 EmptyState(icon: "arrow.down.circle", title: L("Vos téléchargements apparaîtront ici."),

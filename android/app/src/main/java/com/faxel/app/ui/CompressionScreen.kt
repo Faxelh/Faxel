@@ -154,7 +154,7 @@ fun CompressionScreen(onClose: () -> Unit) {
                 val picked = selected
                 if (picked != null) {
                     Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("Taille estimée : ${formatSize(sourceSize * quality.estimate)}", color = Muted, fontSize = 13.sp)
+                        Text("Taille estimée : ${formatSize((sourceSize * quality.estimate).toDouble())}", color = Muted, fontSize = 13.sp)
                         if (running) {
                             LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth(), color = accent)
                             Text("Compression… ${(progress * 100).toInt()} %", color = Muted, fontSize = 12.sp)
@@ -214,7 +214,7 @@ private fun startCompression(
                 }
             })
             .build()
-        val effects = Effects(emptyList(), listOf<Effect>(Presentation.createForShortSide(quality.shortSide)))
+        val effects = Effects(emptyList(), listOf<Effect>(Presentation.createForHeight(quality.shortSide)))
         val edited = EditedMediaItem.Builder(MediaItem.fromUri(Uri.fromFile(input))).setEffects(effects).build()
         onStart(built, destination)
         built.start(edited, destination.absolutePath)

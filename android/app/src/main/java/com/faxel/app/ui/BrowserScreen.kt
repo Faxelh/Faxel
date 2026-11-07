@@ -233,6 +233,17 @@ object Browser {
         if (view === web) view = null
     }
 
+    /** URL du Reel/status qui contient la vidéo visible, plutôt que la page du fil. */
+    fun videoPageAddress(fallback: String, callback: (String) -> Unit) {
+        val script = """(function(){try{var vs=[].slice.call(document.querySelectorAll('video'));var best=null,score=0;vs.forEach(function(v){var r=v.getBoundingClientRect(),w=Math.max(0,Math.min(r.right,innerWidth)-Math.max(r.left,0)),h=Math.max(0,Math.min(r.bottom,innerHeight)-Math.max(r.top,0)),s=w*h+(!v.paused?1e8:0);if(w*h>0&&s>score){score=s;best=v;}});if(best){var n=best;for(var i=0;i<6&&n;i++,n=n.parentElement){var a=n.querySelector&&n.querySelector('a[href*="/reel/"],a[href*="/videos/"],a[href*="/status/"]');if(a)return a.href;}}return location.href;}catch(e){return location.href;}})()"""
+        val web = view
+        if (web == null) { callback(fallback); return }
+        web.evaluateJavascript(script) { raw ->
+            val candidate = runCatching { org.json.JSONTokener(raw ?: "").nextValue() as? String }.getOrNull()
+            callback(candidate?.takeIf { it.startsWith("http") } ?: fallback)
+        }
+    }
+
     fun setVisible(visible: Boolean) {
         val web = view ?: return
         web.visibility = if (visible) View.VISIBLE else View.INVISIBLE
@@ -322,10 +333,12 @@ fun BrowserScreen(onDownload: () -> Unit, visible: Boolean = true) {
     LaunchedEffect(visible) { Browser.setVisible(visible) }
 
     fun sendToDownload(link: String) {
-        Engine.pendingAutoDownload = false
-        Engine.pendingLink = link
-        Browser.dismiss()
-        onDownload()
+        Browser.videoPageAddress(link) { selected ->
+            Engine.pendingAutoDownload = false
+            Engine.pendingLink = selected
+            Browser.dismiss()
+            onDownload()
+        }
     }
 
     val context = LocalContext.current
@@ -333,11 +346,13 @@ fun BrowserScreen(onDownload: () -> Unit, visible: Boolean = true) {
 
     /** Ajoute directement à la file de téléchargement : on reste dans le navigateur. */
     fun queue(link: String) {
-        Browser.dismiss()
-        val media = Prefs.defaultMedia.value
-        val title = Browser.title.removeSuffix(" - YouTube").trim()
-        Engine.download(listOf(Triple(link, title, null)), media, if (media == "audio") BEST else Prefs.defaultQuality.value)
-        android.widget.Toast.makeText(context, queuedText, android.widget.Toast.LENGTH_SHORT).show()
+        Browser.videoPageAddress(link) { selected ->
+            Browser.dismiss()
+            val media = Prefs.defaultMedia.value
+            val title = Browser.title.removeSuffix(" - YouTube").trim()
+            Engine.download(listOf(Triple(selected, title, null)), media, if (media == "audio") BEST else Prefs.defaultQuality.value)
+            android.widget.Toast.makeText(context, queuedText, android.widget.Toast.LENGTH_SHORT).show()
+        }
     }
 
     val canBack = Browser.canGoBack || !Browser.home

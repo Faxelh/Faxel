@@ -105,6 +105,7 @@ object LibraryModel {
     var query by mutableStateOf("")
     var searching by mutableStateOf(false)
     var videoLayout by mutableStateOf("grid2")
+    var videoSort by mutableStateOf("recent")
     /** Sélection de plusieurs éléments (clé = chemin du fichier). */
     val selection = SelectionState()
 }
@@ -317,6 +318,15 @@ private fun Header(context: Context, canSelect: Boolean) {
                 Box {
                     IconButton(onClick = { layoutMenu = true }) { Icon(Icons.Rounded.MoreVert, null, tint = accent) }
                     DropdownMenu(expanded = layoutMenu, onDismissRequest = { layoutMenu = false }) {
+                        listOf("recent", "title", "size", "duration").forEach { sort ->
+                            val label = when (sort) {
+                                "title" -> "Trier par : titre"
+                                "size" -> "Trier par : taille"
+                                "duration" -> "Trier par : durée"
+                                else -> "Trier par : ajout récent"
+                            }
+                            DropdownMenuItem(text = { Text(label) }, onClick = { model.videoSort = sort; layoutMenu = false })
+                        }
                         listOf("grid2", "grid4", "grid8", "list", "detail").forEach { mode ->
                             val label = when (mode) {
                                 "grid4" -> stringResource(R.string.layout_grid4)
@@ -390,8 +400,14 @@ private fun LazyGridScope.videos(all: List<Entry>, context: Context) {
         }
         return
     }
-    val shown = (if (open != null) videos.filter { it.folderPath == open } else videos)
-        .sortedWith { a, b -> Subtitles.episodeOrder(File(a.path), File(b.path)) }
+    val shown = (if (open != null) videos.filter { it.folderPath == open } else videos).sortedWith { a, b ->
+        when (model.videoSort) {
+            "title" -> a.title.compareTo(b.title, ignoreCase = true)
+            "size" -> (b.filesize ?: File(b.path).length().toDouble()).compareTo(a.filesize ?: File(a.path).length().toDouble())
+            "duration" -> (b.duration ?: 0.0).compareTo(a.duration ?: 0.0)
+            else -> File(b.path).lastModified().compareTo(File(a.path).lastModified())
+        }
+    }
     items(shown, key = { "v-" + it.path }) { entry -> VideoCard(entry, shown, context) }
 }
 

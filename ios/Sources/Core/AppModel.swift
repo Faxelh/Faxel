@@ -834,7 +834,7 @@ final class AppModel: ObservableObject {
                 self.show(L("Ajouté aux favoris."), .ok)
             } else if result["error"] == nil {
                 self.show(L("Retiré des favoris."), .info)
-            } else if result["error"] == "missing" {
+            } else if jsonString(result["error"]) == "missing" {
                 self.show(L("Fichier introuvable (supprimé ou déplacé)."), .warn)
             }
             UISelectionFeedbackGenerator().selectionChanged()
