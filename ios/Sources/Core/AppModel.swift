@@ -152,6 +152,13 @@ final class AppModel: ObservableObject {
         player.onMessage = { [weak self] text in
             self?.show(text, .warn)
         }
+        player.favoriteStatus = { [weak self] track in
+            self?.isFavorite(track) ?? false
+        }
+        player.onToggleFavorite = { [weak self] track in
+            guard let self = self else { return }
+            self.toggleFavorite(track)
+        }
     }
 
     /// L'Image dans l'image doit laisser voir le reste de l'app (comme Safari) :
@@ -830,9 +837,16 @@ final class AppModel: ObservableObject {
     func toggleFavorite(_ track: Track) {
         engine.run("toggle_favorite", ["entry": track.raw]) { [weak self] result in
             guard let self = self else { return }
-            if jsonBool(result["favorite"]) {
+            let succeeded = result["error"] == nil
+            let favorite = jsonBool(result["favorite"])
+            if succeeded {
+                if favorite { self.favorites.insert(track.path) }
+                else { self.favorites.remove(track.path) }
+                self.audio?.updateNowPlaying()
+            }
+            if favorite {
                 self.show(L("Ajouté aux favoris."), .ok)
-            } else if result["error"] == nil {
+            } else if succeeded {
                 self.show(L("Retiré des favoris."), .info)
             } else if jsonString(result["error"]) == "missing" {
                 self.show(L("Fichier introuvable (supprimé ou déplacé)."), .warn)

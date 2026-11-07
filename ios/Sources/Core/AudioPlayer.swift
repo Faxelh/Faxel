@@ -84,6 +84,8 @@ final class AudioPlayer: NSObject, ObservableObject {
     ]
 
     var onMessage: ((String) -> Void)?
+    var favoriteStatus: ((Track) -> Bool)?
+    var onToggleFavorite: ((Track) -> Void)?
 
     private let engine = AVAudioEngine()
     private let node = AVAudioPlayerNode()
@@ -918,6 +920,15 @@ final class AudioPlayer: NSObject, ObservableObject {
             if let video = VideoPlayerModel.active, video.player.currentItem != nil { video.previous() } else { self?.previous() }
             return .success
         }
+        center.likeCommand.addTarget { [weak self] _ in
+            guard let self = self, let track = self.current, track.isAudio,
+                  let onToggleFavorite = self.onToggleFavorite else { return .commandFailed }
+            onToggleFavorite(track)
+            let command = MPRemoteCommandCenter.shared().likeCommand
+            command.isActive.toggle()
+            command.localizedTitle = command.isActive ? L("Retirer des favoris") : L("Ajouter aux favoris")
+            return .success
+        }
         center.skipForwardCommand.isEnabled = false
         center.skipBackwardCommand.isEnabled = false
         center.changePlaybackPositionCommand.addTarget { [weak self] event in
@@ -927,12 +938,22 @@ final class AudioPlayer: NSObject, ObservableObject {
         }
     }
 
-    private func updateNowPlaying() {
-        if let video = VideoPlayerModel.active, video.player.currentItem != nil { return }
+    func updateNowPlaying() {
+        let likeCommand = MPRemoteCommandCenter.shared().likeCommand
+        if let video = VideoPlayerModel.active, video.player.currentItem != nil {
+            likeCommand.isEnabled = false
+            return
+        }
         guard let track = current else {
+            likeCommand.isEnabled = false
             MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
             return
         }
+        let isFavorite = track.isAudio && (favoriteStatus?(track) ?? false)
+        likeCommand.isEnabled = track.isAudio
+        likeCommand.isActive = isFavorite
+        likeCommand.localizedTitle = isFavorite ? L("Retirer des favoris") : L("Ajouter aux favoris")
+        likeCommand.localizedShortTitle = L("Favori")
         let library = MediaLibrary.shared
         var info: [String: Any] = [
             MPMediaItemPropertyTitle: library.title(track),

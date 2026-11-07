@@ -152,8 +152,24 @@ fun CompressionScreen(onClose: () -> Unit) {
         }
 
         Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Chip("Photos", sourceTab == 0) { sourceTab = 0; if (!photoSource) selected = null }
-            Chip("Vidéos de l'app", sourceTab == 1) { sourceTab = 1; if (photoSource) { selected = null; photoSource = false } }
+            Chip("Photos", sourceTab == 0) {
+                if (sourceTab != 0) {
+                    sourceTab = 0
+                    selected = null
+                    photoSource = false
+                    sourceSize = 0L
+                    error = null
+                }
+            }
+            Chip("Vidéos de l'app", sourceTab == 1) {
+                if (sourceTab != 1) {
+                    sourceTab = 1
+                    selected = null
+                    photoSource = false
+                    sourceSize = 0L
+                    error = null
+                }
+            }
         }
 
         if (output == null) {

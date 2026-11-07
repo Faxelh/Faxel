@@ -34,6 +34,7 @@ struct VideoPlayerView: View {
     @State private var pinchHandled = false
     @State private var importingSubtitle = false
     @State private var noticeText: String?
+    @State private var subtitleGenerationError: String?
     @State private var generatingSubtitles = false
     @State private var subtitleOptionsOpen = false
     @State private var moreOptionsOpen = false
@@ -177,6 +178,14 @@ struct VideoPlayerView: View {
                 video.importSubtitle(url)
             }
         }
+        .alert(L("Sous-titres"), isPresented: Binding(
+            get: { subtitleGenerationError != nil },
+            set: { if !$0 { subtitleGenerationError = nil } }
+        )) {
+            Button(L("Fermer"), role: .cancel) { subtitleGenerationError = nil }
+        } message: {
+            Text(subtitleGenerationError ?? "")
+        }
     }
 
     private var subtitleTypes: [UTType] {
@@ -288,7 +297,8 @@ struct VideoPlayerView: View {
                 try? FileManager.default.removeItem(at: url)
                 showNotice(L("Sous-titres IA ajoutés à cette vidéo."))
             case .failure(let error):
-                showNotice(error.localizedDescription)
+                subtitleOptionsOpen = false
+                subtitleGenerationError = error.localizedDescription
             }
             scheduleHide()
         }
@@ -658,6 +668,11 @@ struct VideoPlayerView: View {
             Form {
                 Section(L("Sous-titres")) {
                     Button(L("Désactivés")) { video.subtitlesOff() }
+                    if video.externalSubtitles.isEmpty && video.embeddedSubtitles.isEmpty {
+                        Text(L("Aucun sous-titre détecté dans cette vidéo."))
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
                     ForEach(video.externalSubtitles, id: \.self) { url in
                         Button(SubtitleParser.displayName(url)) { video.selectExternal(url) }
                     }

@@ -13,6 +13,7 @@ struct CompressionView: View {
     @State private var photoVideos: [PHAsset] = []
     @State private var photosAuthorization = PHPhotoLibrary.authorizationStatus(for: .readWrite)
     @State private var selectedPhoto: PhotoAssetSelection?
+    @State private var chosenPhoto: PHAsset?
 
     private let presets: [(name: String, value: String, factor: Double)] = [
         ("1080p", AVAssetExportPreset1920x1080, 0.72),
@@ -30,7 +31,16 @@ struct CompressionView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
-                    Picker(L("Source"), selection: $sourceTab) {
+                    Picker(L("Source"), selection: Binding(
+                        get: { sourceTab },
+                        set: { value in
+                            guard value != sourceTab else { return }
+                            sourceTab = value
+                            selectedPath = ""
+                            chosenPhoto = nil
+                            selectedPhoto = nil
+                        }
+                    )) {
                         Text(L("Photos")).tag(0)
                         Text(L("Vidéos de l'app")).tag(1)
                     }
@@ -40,6 +50,29 @@ struct CompressionView: View {
 
                     if sourceTab == 0 {
                         photosGrid
+                        if let chosenPhoto {
+                            VStack(alignment: .leading, spacing: 10) {
+                                Text(photoAssetName(chosenPhoto))
+                                    .font(.system(size: 15, weight: .semibold))
+                                    .lineLimit(2)
+                                Text(L("Taille actuelle : {size}", ["size": Fmt.size(photoAssetSize(chosenPhoto))]))
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(.secondary)
+                                Button {
+                                    selectedPhoto = PhotoAssetSelection(asset: chosenPhoto)
+                                } label: {
+                                    Label(L("Continuer"), systemImage: "arrow.right")
+                                        .font(.system(size: 15, weight: .bold))
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 12)
+                                        .foregroundStyle(.white)
+                                        .background(Color.brand, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                                }
+                            }
+                            .padding(16)
+                            .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                            .padding(.horizontal, 16)
+                        }
                     } else {
                     HStack(spacing: 12) {
                         Label(L("Vidéos"), systemImage: "video.fill")
@@ -135,7 +168,8 @@ struct CompressionView: View {
             } else {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 105), spacing: 12)], spacing: 12) {
                     ForEach(photoVideos, id: \.localIdentifier) { asset in
-                        Button { selectedPhoto = PhotoAssetSelection(asset: asset) } label: { PhotoVideoCard(asset: asset) }
+                        let isSelected = chosenPhoto?.localIdentifier == asset.localIdentifier
+                        Button { chosenPhoto = asset } label: { PhotoVideoCard(asset: asset, isSelected: isSelected) }
                             .buttonStyle(.plain)
                     }
                 }
@@ -206,6 +240,7 @@ private struct PhotoAssetSelection: Identifiable {
 
 private struct PhotoVideoCard: View {
     let asset: PHAsset
+    let isSelected: Bool
     @State private var image: UIImage?
 
     var body: some View {
@@ -223,9 +258,20 @@ private struct PhotoVideoCard: View {
                 }
                 .font(.system(size: 10, weight: .semibold)).foregroundStyle(.white)
                 .padding(5).background(.black.opacity(0.65))
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 22, weight: .semibold))
+                        .symbolRenderingMode(.palette)
+                        .foregroundStyle(.white, Color.brand)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                        .padding(7)
+                }
             }
             Text(photoAssetName(asset)).font(.system(size: 11, weight: .medium)).lineLimit(1)
         }
+        .padding(4)
+        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(isSelected ? Color.brand : .clear, lineWidth: 2))
         .task(id: asset.localIdentifier) {
             let options = PHImageRequestOptions()
             options.deliveryMode = .highQualityFormat

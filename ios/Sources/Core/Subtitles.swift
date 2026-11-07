@@ -12,6 +12,9 @@ enum SubtitleParser {
     static func load(_ url: URL) -> [SubtitleCue] {
         guard let data = try? Data(contentsOf: url) else { return [] }
         let text = String(data: data, encoding: .utf8)
+            ?? String(data: data, encoding: .utf16)
+            ?? String(data: data, encoding: .utf16LittleEndian)
+            ?? String(data: data, encoding: .utf16BigEndian)
             ?? String(data: data, encoding: .isoLatin1)
             ?? String(data: data, encoding: .windowsCP1252)
             ?? ""
@@ -65,13 +68,25 @@ enum SubtitleParser {
         let text = raw.replacingOccurrences(of: "\r\n", with: "\n").replacingOccurrences(of: "\r", with: "\n")
             .replacingOccurrences(of: "\u{FEFF}", with: "")
         var cues: [SubtitleCue] = []
-        for block in text.components(separatedBy: "\n\n") {
-            let lines = block.split(separator: "\n", omittingEmptySubsequences: true).map(String.init)
+        var blocks: [[String]] = []
+        var currentBlock: [String] = []
+        for line in text.components(separatedBy: "\n") {
+            if line.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                if !currentBlock.isEmpty {
+                    blocks.append(currentBlock)
+                    currentBlock.removeAll(keepingCapacity: true)
+                }
+            } else {
+                currentBlock.append(line)
+            }
+        }
+        if !currentBlock.isEmpty { blocks.append(currentBlock) }
+        for lines in blocks {
             guard let timeIndex = lines.firstIndex(where: { $0.contains("-->") }) else { continue }
             let parts = lines[timeIndex].components(separatedBy: "-->")
             guard parts.count == 2,
                   let start = time(parts[0]),
-                  let end = time(parts[1].trimmingCharacters(in: .whitespaces).components(separatedBy: " ").first ?? "")
+                  let end = time(parts[1].split(whereSeparator: \.isWhitespace).first.map(String.init) ?? "")
             else { continue }
             let body = lines[(timeIndex + 1)...].map(stripTags).joined(separator: "\n")
                 .trimmingCharacters(in: .whitespacesAndNewlines)

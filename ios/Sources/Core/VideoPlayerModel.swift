@@ -199,7 +199,7 @@ final class VideoPlayerModel: NSObject, ObservableObject, AVPictureInPictureCont
                         let tag = (option.extendedLanguageTag ?? option.locale?.identifier ?? "").lowercased()
                         return tag.hasPrefix(Lang.code)
                     }
-                    if auto, let option = wanted {
+                    if auto, let option = wanted ?? self.embeddedSubtitles.first {
                         item.select(option, in: group)
                         self.selectedEmbedded = option
                     } else {
@@ -528,7 +528,15 @@ final class VideoPlayerModel: NSObject, ObservableObject, AVPictureInPictureCont
         do {
             try FileManager.default.copyItem(at: url, to: target)
         } catch {
-            target = url
+            let folder = FileManager.default.temporaryDirectory.appendingPathComponent("FaxelSubtitles", isDirectory: true)
+            try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            let fallback = folder.appendingPathComponent(UUID().uuidString).appendingPathExtension(ext)
+            do {
+                try FileManager.default.copyItem(at: url, to: fallback)
+                target = fallback
+            } catch {
+                target = url
+            }
         }
         externalSubtitles = SubtitleParser.siblings(of: track.fileURL)
         if target != url && !externalSubtitles.contains(target) {
@@ -657,6 +665,7 @@ final class VideoPlayerModel: NSObject, ObservableObject, AVPictureInPictureCont
 
     func updateNowPlaying() {
         guard VideoPlayerModel.active === self, let track = current else { return }
+        MPRemoteCommandCenter.shared().likeCommand.isEnabled = false
         var info: [String: Any] = [
             MPMediaItemPropertyTitle: MediaLibrary.shared.title(track),
             MPNowPlayingInfoPropertyElapsedPlaybackTime: currentTime,
