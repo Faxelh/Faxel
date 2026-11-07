@@ -202,4 +202,10 @@
     <string name="sel_delete_title">Delete %1$d item(s)?</string>
     <string name="sel_delete_text">The files will be erased from the phone.</string>
     <string name="sel_delete_failed">Couldn\'t delete.</string>
+    <string name="tab_home">Home</string>
+    <string name="home_subtitle">Your downloads, media and tools in one place.</string>
+    <string name="home_download_hint">Get videos and music</string>
+    <string name="home_library_hint">Find and organize your files</string>
+    <string name="home_browser_hint">Browse and download directly</string>
+    <string name="home_settings_hint">Personalize Faxel</string>
 </resources>

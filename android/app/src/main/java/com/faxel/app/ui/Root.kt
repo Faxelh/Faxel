@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Download
+import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
@@ -74,10 +75,11 @@ import com.faxel.app.playback.VideoState
 import java.io.File
 
 enum class Tab(val icon: ImageVector, val label: Int) {
-    Download(Icons.Rounded.Download, R.string.tab_download),
+    Home(Icons.Rounded.Home, R.string.tab_home),
     Library(Icons.Rounded.VideoLibrary, R.string.tab_library),
-    Browser(Icons.Rounded.Language, R.string.tab_browser),
+    Download(Icons.Rounded.Download, R.string.tab_download),
     Settings(Icons.Rounded.Settings, R.string.tab_settings),
+    Browser(Icons.Rounded.Language, R.string.tab_browser),
 }
 
 /** Largeur de l'écran : téléphone (compact) ou tablette / téléphone à l'horizontale. */
@@ -87,7 +89,7 @@ object Layout {
 
 @Composable
 fun FaxelRoot() {
-    var tab by rememberSaveable { mutableStateOf(Tab.Download) }
+    var tab by rememberSaveable { mutableStateOf(Tab.Home) }
     var audioOpen by rememberSaveable { mutableStateOf(false) }
     var searchOpen by rememberSaveable { mutableStateOf(false) }
     val snackbar = remember { SnackbarHostState() }
@@ -142,6 +144,7 @@ fun FaxelRoot() {
                 if (tab != Tab.Browser) {
                     Box(Modifier.fillMaxSize().background(Color(0xFF0B0B0F)).blockTouches()) {
                         when (tab) {
+                            Tab.Home -> HomeScreen(onNavigate = { tab = it })
                             Tab.Download -> DownloadScreen(onSearch = { searchOpen = true })
                             Tab.Library -> LibraryScreen(onOpenAudio = { audioOpen = true })
                             Tab.Settings -> SettingsScreen()

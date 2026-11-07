@@ -202,4 +202,10 @@
     <string name="sel_delete_title">%1$d Element(e) löschen?</string>
     <string name="sel_delete_text">Die Dateien werden vom Telefon gelöscht.</string>
     <string name="sel_delete_failed">Löschen nicht möglich.</string>
+    <string name="tab_home">Start</string>
+    <string name="home_subtitle">Downloads, Medien und Werkzeuge an einem Ort.</string>
+    <string name="home_download_hint">Videos und Musik herunterladen</string>
+    <string name="home_library_hint">Dateien finden und organisieren</string>
+    <string name="home_browser_hint">Surfen und direkt herunterladen</string>
+    <string name="home_settings_hint">Faxel anpassen</string>
 </resources>

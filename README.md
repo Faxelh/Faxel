@@ -2,6 +2,8 @@
 
 **Faxel** est une application pour **iPhone et Android** qui réunit un navigateur avec téléchargement intégré, un lecteur vidéo/audio et une bibliothèque pour ranger ses fichiers, le tout en français. Un seul dépôt sert les deux plateformes.
 
+Faxel réunit aussi les fonctions multimédias d’Elara : Coffre privé, compression vidéo/audio sur iPhone et transfert Wi‑Fi. Les téléchargements depuis Facebook, YouTube, TikTok, Instagram et X se lancent depuis un lien partagé ou le navigateur intégré.
+
 ## 📲 Installation
 
 Faxel n'est pas sur l'App Store ni sur le Play Store : on l'installe soi-même avec un fichier d'installation, à télécharger dans les [**Releases**](https://github.com/Faxelh/Faxel/releases) du dépôt.

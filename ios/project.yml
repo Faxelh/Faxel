@@ -44,6 +44,7 @@ targets:
         NSFaceIDUsageDescription: "Faxel utilise Face ID pour protéger votre Coffre de fichiers privés."
         NSLocalNetworkUsageDescription: "Faxel reçoit les fichiers envoyés depuis votre ordinateur par Wi-Fi (Transfert Wi-Fi)."
         NSPhotoLibraryAddUsageDescription: "Faxel ajoute les vidéos et photos téléchargées à votre app Photos."
+        NSPhotoLibraryUsageDescription: "Faxel utilise votre photothèque pour enregistrer et importer vos vidéos et photos."
         CFBundleDocumentTypes:
           - CFBundleTypeName: "Audio"
             CFBundleTypeRole: Viewer

@@ -212,7 +212,9 @@ final class AppModel: ObservableObject {
                 let photos = (event["photos"] as? [Any] ?? []).compactMap { jsonString($0) }
                 let ext = (path as NSString).pathExtension.lowercased()
                 let video = videoExtensions.contains(ext) ? URL(fileURLWithPath: path) : nil
-                PhotoSaver.save(video: video, images: photos.map { URL(fileURLWithPath: $0) }) { _ in }
+                PhotoSaver.save(video: video, images: photos.map { URL(fileURLWithPath: $0) }) { [weak self] ok, reason in
+                    if !ok, let reason { self?.show(reason, .warn) }
+                }
             }
         case "failed":
             if tab != .download {
@@ -904,12 +906,11 @@ final class AppModel: ObservableObject {
     func saveToPhotos(_ track: Track) {
         guard checkExists(track) else { return }
         let video = track.isFolder || track.isAudio ? nil : track.fileURL
-        PhotoSaver.save(video: video, images: track.photoURLs) { [weak self] ok in
+        PhotoSaver.save(video: video, images: track.photoURLs) { [weak self] ok, reason in
             if ok {
                 self?.show(L("Ajouté à l'app Photos."), .ok)
             } else {
-                self?.show(L("Impossible d'ajouter à Photos : autorisez Faxel dans Réglages › Confidentialité › Photos."),
-                           .warn)
+                self?.show(reason ?? L("Impossible d'ajouter à l'app Photos."), .warn)
             }
         }
     }
@@ -924,12 +925,11 @@ final class AppModel: ObservableObject {
             return
         }
         show(L("Ajout de {count} élément(s) à Photos…", ["count": "\(videos.count + images.count)"]), .info)
-        PhotoSaver.saveMany(videos: videos, images: images) { [weak self] ok in
+        PhotoSaver.saveMany(videos: videos, images: images) { [weak self] ok, reason in
             if ok {
                 self?.show(L("{count} élément(s) ajouté(s) à l'app Photos.", ["count": "\(videos.count + images.count)"]), .ok)
             } else {
-                self?.show(L("Impossible d'ajouter à Photos : autorisez Faxel dans Réglages › Confidentialité › Photos."),
-                           .warn)
+                self?.show(reason ?? L("Impossible d'ajouter à l'app Photos."), .warn)
             }
         }
     }

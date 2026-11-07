@@ -4,14 +4,14 @@ import UIKit
 
 /// Ajout à l'app Photos (vidéos et photos).
 enum PhotoSaver {
-    static func save(video: URL?, images: [URL], completion: @escaping (Bool) -> Void) {
+    static func save(video: URL?, images: [URL], completion: @escaping (Bool, String?) -> Void) {
         guard video != nil || !images.isEmpty else {
-            completion(false)
+            completion(false, "Aucun fichier photo ou vidéo compatible.")
             return
         }
         PHPhotoLibrary.requestAuthorization(for: .addOnly) { status in
             guard status == .authorized || status == .limited else {
-                DispatchQueue.main.async { completion(false) }
+                DispatchQueue.main.async { completion(false, "Autorisation Photos : \(status). Vérifiez Réglages > Apps > Faxel > Photos.") }
                 return
             }
             PHPhotoLibrary.shared().performChanges({
@@ -21,8 +21,10 @@ enum PhotoSaver {
                 for image in images {
                     _ = PHAssetChangeRequest.creationRequestForAssetFromImage(atFileURL: image)
                 }
-            }, completionHandler: { success, _ in
-                DispatchQueue.main.async { completion(success) }
+            }, completionHandler: { success, error in
+                DispatchQueue.main.async {
+                    completion(success, success ? nil : (error?.localizedDescription ?? "Photos a refusé l'enregistrement."))
+                }
             })
         }
     }
@@ -30,14 +32,14 @@ enum PhotoSaver {
 
 extension PhotoSaver {
     /// Plusieurs vidéos et photos en une fois.
-    static func saveMany(videos: [URL], images: [URL], completion: @escaping (Bool) -> Void) {
+    static func saveMany(videos: [URL], images: [URL], completion: @escaping (Bool, String?) -> Void) {
         guard !videos.isEmpty || !images.isEmpty else {
-            completion(false)
+            completion(false, "Aucun fichier photo ou vidéo compatible.")
             return
         }
         PHPhotoLibrary.requestAuthorization(for: .addOnly) { status in
             guard status == .authorized || status == .limited else {
-                DispatchQueue.main.async { completion(false) }
+                DispatchQueue.main.async { completion(false, "Autorisation Photos : \(status). Vérifiez Réglages > Apps > Faxel > Photos.") }
                 return
             }
             PHPhotoLibrary.shared().performChanges({
@@ -47,8 +49,10 @@ extension PhotoSaver {
                 for image in images {
                     _ = PHAssetChangeRequest.creationRequestForAssetFromImage(atFileURL: image)
                 }
-            }, completionHandler: { success, _ in
-                DispatchQueue.main.async { completion(success) }
+            }, completionHandler: { success, error in
+                DispatchQueue.main.async {
+                    completion(success, success ? nil : (error?.localizedDescription ?? "Photos a refusé l'enregistrement."))
+                }
             })
         }
     }
