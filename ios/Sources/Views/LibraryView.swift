@@ -1013,9 +1013,6 @@ struct DownloadsListView: View {
     @State private var confirmClear = false
     @State private var previewItems: [URL] = []
     @State private var previewURL: URL?
-    @State private var selectingFavorites = false
-    @State private var selectedFavoriteIDs: Set<String> = []
-    @State private var confirmRemoveFavorites = false
     @State private var creatingFolder = false
     @State private var newFolderName = ""
 
@@ -1153,6 +1150,9 @@ struct CollectionView: View {
     @State private var confirmDelete = false
     @State private var previewItems: [URL] = []
     @State private var previewURL: URL?
+    @State private var selectingFavorites = false
+    @State private var selectedFavoriteIDs: Set<String> = []
+    @State private var confirmRemoveFavorites = false
 
     private var playlist: Playlist? {
         if case .playlist(let id) = route { return model.playlist(id) }
@@ -1212,31 +1212,7 @@ struct CollectionView: View {
                         .listRowSeparator(.hidden)
                 } else {
                     ForEach(Array(list.enumerated()), id: \.element.id) { index, track in
-                        HStack(spacing: 10) {
-                            if selectingFavorites {
-                                SelectionCheck(selected: selectedFavoriteIDs.contains(track.id))
-                            }
-                            TrackRow(track: track, onTap: {
-                                if selectingFavorites {
-                                    if selectedFavoriteIDs.contains(track.id) { selectedFavoriteIDs.remove(track.id) }
-                                    else { selectedFavoriteIDs.insert(track.id) }
-                                } else {
-                                    open(track, in: list, at: index)
-                                }
-                            }) {
-                                menu(for: track)
-                            }
-                        }
-                        .contextMenu {
-                            menu(for: track)
-                        }
-                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                            Button(role: .destructive) {
-                                remove(track)
-                            } label: {
-                                Label(removeLabel, systemImage: isVault ? "lock.open" : "minus.circle")
-                            }
-                        }
+                        collectionTrackRow(track, index: index, list: list)
                     }
                 }
             }
@@ -1330,6 +1306,34 @@ struct CollectionView: View {
         case .vault: return L("Rangez ici vos fichiers privés : ⋯ puis « Mettre au Coffre » dans la Bibliothèque.")
         case .favorites: return L("Touchez ⋯ puis « Favori » sur un morceau ou une vidéo pour le retrouver ici.")
         default: return L("Ajoutez des morceaux depuis la Bibliothèque : ⋯ puis « Ajouter à une playlist ».")
+        }
+    }
+
+    @ViewBuilder
+    private func collectionTrackRow(_ track: Track, index: Int, list: [Track]) -> some View {
+        HStack(spacing: 10) {
+            if selectingFavorites {
+                SelectionCheck(selected: selectedFavoriteIDs.contains(track.id))
+            }
+            TrackRow(track: track, onTap: {
+                if selectingFavorites {
+                    if selectedFavoriteIDs.contains(track.id) {
+                        selectedFavoriteIDs.remove(track.id)
+                    } else {
+                        selectedFavoriteIDs.insert(track.id)
+                    }
+                } else {
+                    open(track, in: list, at: index)
+                }
+            }) {
+                menu(for: track)
+            }
+        }
+        .contextMenu { menu(for: track) }
+        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+            Button(role: .destructive) { remove(track) } label: {
+                Label(removeLabel, systemImage: isVault ? "lock.open" : "minus.circle")
+            }
         }
     }
 
