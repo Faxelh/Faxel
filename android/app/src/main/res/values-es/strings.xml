@@ -7,7 +7,7 @@
     <string name="home_compress_hint">Reducir el tamaño y conservar el original</string>
     <string name="layout_grid2">Cuadrícula 2 × 2</string>
     <string name="layout_grid4">Cuadrícula 4 × 4</string>
-    <string name="layout_grid8">Cuadrícula 8 × 8</string>
+    <string name="layout_grid6">Cuadrícula 6 × 6</string>
     <string name="layout_list">Lista</string>
     <string name="layout_detail">Lista detallada</string>
     <string name="bass">Graves</string>

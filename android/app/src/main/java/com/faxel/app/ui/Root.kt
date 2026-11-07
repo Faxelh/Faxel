@@ -30,7 +30,7 @@ import androidx.compose.material.icons.rounded.AccountCircle
 import androidx.compose.material.icons.rounded.Groups
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Language
-import androidx.compose.material.icons.rounded.Notifications
+import androidx.compose.material.icons.rounded.AutoFixHigh
 import androidx.compose.material.icons.rounded.SmartDisplay
 import androidx.compose.material.icons.rounded.Storefront
 import androidx.compose.material.icons.rounded.Pause
@@ -196,6 +196,7 @@ fun FaxelRoot() {
                     Column(Modifier.fillMaxWidth().navigationBarsPadding()) {
                         if (AudioConnection.current != null) MiniPlayer(onOpen = { audioOpen = true })
                         val selectedDockIndex = when {
+                            compressionOpen -> 3
                             tab == Tab.Browser -> 5
                             tab == Tab.Settings -> 4
                             else -> when (tab) {
@@ -214,12 +215,12 @@ fun FaxelRoot() {
                             Box(Modifier.align(Alignment.CenterStart).offset(x = indicatorX).width(itemWidth - 4.dp).height(48.dp)
                                 .clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = 0.12f)))
                             Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
-                                DockIcon(Icons.Rounded.Home, tab == Tab.Home, stringResource(R.string.tab_home), Modifier.weight(1f)) { tab = Tab.Home; searchOpen = false }
-                                DockIcon(Icons.Rounded.SmartDisplay, tab == Tab.Library, stringResource(R.string.tab_library), Modifier.weight(1f)) { tab = Tab.Library; searchOpen = false }
-                                DockIcon(Icons.Rounded.Storefront, tab == Tab.Download, stringResource(R.string.tab_download), Modifier.weight(1f), Engine.jobs.count { it.active }) { tab = Tab.Download; searchOpen = false }
-                                DockIcon(Icons.Rounded.Notifications, false, stringResource(R.string.tab_download), Modifier.weight(1f), Engine.jobs.count { it.failed }) { tab = Tab.Download; searchOpen = false }
-                                DockIcon(Icons.Rounded.AccountCircle, tab == Tab.Settings, stringResource(R.string.tab_settings), Modifier.weight(1f), photo = Prefs.profilePhoto.value) { tab = Tab.Settings; searchOpen = false }
-                                DockIcon(Icons.Rounded.Language, tab == Tab.Browser, stringResource(R.string.tab_browser), Modifier.weight(1f)) { tab = Tab.Browser; searchOpen = false }
+                                DockIcon(Icons.Rounded.Home, tab == Tab.Home && !compressionOpen, stringResource(R.string.tab_home), Modifier.weight(1f)) { compressionOpen = false; tab = Tab.Home; searchOpen = false }
+                                DockIcon(Icons.Rounded.SmartDisplay, tab == Tab.Library && !compressionOpen, stringResource(R.string.tab_library), Modifier.weight(1f)) { compressionOpen = false; tab = Tab.Library; searchOpen = false }
+                                DockIcon(Icons.Rounded.Storefront, tab == Tab.Download && !compressionOpen, stringResource(R.string.tab_download), Modifier.weight(1f), Engine.jobs.count { it.active }) { compressionOpen = false; tab = Tab.Download; searchOpen = false }
+                                DockIcon(Icons.Rounded.AutoFixHigh, compressionOpen, "Compresser", Modifier.weight(1f)) { compressionOpen = true; searchOpen = false }
+                                DockIcon(Icons.Rounded.AccountCircle, tab == Tab.Settings && !compressionOpen, stringResource(R.string.tab_settings), Modifier.weight(1f), photo = Prefs.profilePhoto.value) { compressionOpen = false; tab = Tab.Settings; searchOpen = false }
+                                DockIcon(Icons.Rounded.Language, tab == Tab.Browser && !compressionOpen, stringResource(R.string.tab_browser), Modifier.weight(1f)) { compressionOpen = false; tab = Tab.Browser; searchOpen = false }
                             }
                         }
                     }

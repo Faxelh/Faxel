@@ -63,6 +63,7 @@ struct RootView: View {
     @EnvironmentObject var browser: BrowserModel
     @EnvironmentObject var jobStore: JobStore
     @State private var showQueue = false
+    @State private var showCompression = false
     @Namespace private var dockSelection
     @AppStorage("faxelProfilePhotoPath") private var profilePhotoPath = ""
 
@@ -124,6 +125,9 @@ struct RootView: View {
                 .environmentObject(model)
                 .environmentObject(jobStore)
         }
+        .sheet(isPresented: $showCompression) {
+            CompressionView().environmentObject(model)
+        }
         .fullScreenCover(item: $model.videoSession) { session in
             VideoPlayerView(session: session)
                 .environmentObject(model)
@@ -155,7 +159,7 @@ struct RootView: View {
             homeDockButton
             libraryDockButton
             downloadDockButton
-            queueDockButton
+            compressionDockButton
             profileDockButton
             browserDockButton
         }
@@ -167,30 +171,34 @@ struct RootView: View {
         .padding(.bottom, 7)
         .background(LinearGradient(colors: [Color.clear, Color.black.opacity(0.35)], startPoint: .top, endPoint: .bottom))
         .animation(.spring(response: 0.34, dampingFraction: 0.78), value: model.tab)
-        .animation(.spring(response: 0.34, dampingFraction: 0.78), value: showQueue)
+        .animation(.spring(response: 0.34, dampingFraction: 0.78), value: showCompression)
         .animation(.spring(response: 0.34, dampingFraction: 0.78), value: model.showBrowser)
     }
 
     private var homeDockButton: some View {
-        dockButton("house.fill", label: L("Accueil"), selected: model.tab == .home && !model.showBrowser && !showQueue) { model.tab = .home }
+        dockButton("house.fill", label: L("Accueil"), selected: model.tab == .home && !model.showBrowser && !showQueue && !showCompression) { model.tab = .home }
     }
 
     private var libraryDockButton: some View {
-        dockButton("play.rectangle", label: L("Bibliothèque"), selected: model.tab == .library && !model.showBrowser && !showQueue) { model.tab = .library }
+        dockButton("play.rectangle", label: L("Bibliothèque"), selected: model.tab == .library && !model.showBrowser && !showQueue && !showCompression) { model.tab = .library }
     }
 
     private var downloadDockButton: some View {
-        dockButton("storefront", label: L("Télécharger"), selected: model.tab == .download && !model.showBrowser && !showQueue, badge: activeCount) { model.tab = .download }
+        dockButton("storefront", label: L("Télécharger"), selected: model.tab == .download && !model.showBrowser && !showQueue && !showCompression, badge: activeCount) { model.tab = .download }
     }
 
     private var browserDockButton: some View {
-        dockButton("globe", label: L("Navigateur"), selected: model.showBrowser && !showQueue) {
+        dockButton("globe", label: L("Navigateur"), selected: model.showBrowser && !showQueue && !showCompression) {
             withAnimation(.spring(response: 0.42, dampingFraction: 0.9)) { model.showBrowser = true }
         }
     }
 
     private var queueDockButton: some View {
         dockButton("bell", label: L("Téléchargements"), selected: showQueue, badge: failedCount) { showQueue = true }
+    }
+
+    private var compressionDockButton: some View {
+        dockButton("arrow.down.right.and.arrow.up.left", label: L("Compresser"), selected: showCompression) { showCompression = true }
     }
 
     private var profileDockButton: some View {
@@ -203,7 +211,7 @@ struct RootView: View {
                     .frame(maxWidth: .infinity)
                     .frame(height: 52)
                     .background {
-                        if model.tab == .settings && !model.showBrowser && !showQueue {
+                        if model.tab == .settings && !model.showBrowser && !showQueue && !showCompression {
                             Capsule().fill(Color.white.opacity(0.12))
                                 .matchedGeometryEffect(id: "faxelDockSelection", in: dockSelection)
                         }

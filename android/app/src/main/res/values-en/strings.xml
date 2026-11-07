@@ -7,7 +7,7 @@
     <string name="home_compress_hint">Make a smaller copy and keep the original</string>
     <string name="layout_grid2">Grid 2 × 2</string>
     <string name="layout_grid4">Grid 4 × 4</string>
-    <string name="layout_grid8">Grid 8 × 8</string>
+    <string name="layout_grid6">Grid 6 × 6</string>
     <string name="layout_list">List</string>
     <string name="layout_detail">Detailed list</string>
     <string name="bass">Bass</string>

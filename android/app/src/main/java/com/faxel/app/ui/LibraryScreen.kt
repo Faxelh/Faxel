@@ -173,6 +173,7 @@ fun LibraryScreen(onOpenAudio: () -> Unit) {
     }
 
     val query = model.query.trim()
+    LaunchedEffect(Unit) { if (model.videoLayout == "grid8") model.videoLayout = "grid6" }
     val all = Engine.entries.filter { it.exists }.filter {
         query.isEmpty() || it.title.contains(query, true) || it.uploader.contains(query, true) || it.folder.contains(query, true)
     }
@@ -181,7 +182,7 @@ fun LibraryScreen(onOpenAudio: () -> Unit) {
         model.section != Section.Videos -> GridCells.Adaptive(minCell)
         model.videoLayout == "list" || model.videoLayout == "detail" -> GridCells.Fixed(1)
         model.videoLayout == "grid4" -> GridCells.Fixed(4)
-        model.videoLayout == "grid8" -> GridCells.Fixed(8)
+        model.videoLayout == "grid6" -> GridCells.Fixed(6)
         else -> GridCells.Fixed(2)
     }
 
@@ -216,14 +217,14 @@ fun LibraryScreen(onOpenAudio: () -> Unit) {
         }
     }
     if (selection.active) {
-        LibrarySelectionBar(selectable, Modifier.align(Alignment.BottomCenter))
+        LibrarySelectionBar(selectable, model.section == Section.Favorites, Modifier.align(Alignment.BottomCenter))
     }
     }
 }
 
 /** Barre de sélection de la bibliothèque : Galerie, Dossier, Partager, Supprimer. */
 @Composable
-private fun LibrarySelectionBar(selectable: List<Entry>, modifier: Modifier) {
+private fun LibrarySelectionBar(selectable: List<Entry>, favoritesOnly: Boolean, modifier: Modifier) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val selection = LibraryModel.selection
@@ -274,12 +275,12 @@ private fun LibrarySelectionBar(selectable: List<Entry>, modifier: Modifier) {
     if (confirm) {
         AlertDialog(
             onDismissRequest = { confirm = false },
-            title = { Text(stringResource(R.string.sel_delete_title, chosen.size)) },
-            text = { Text(stringResource(R.string.sel_delete_text)) },
+            title = { Text(if (favoritesOnly) "Retirer ${chosen.size} favori(s) ?" else stringResource(R.string.sel_delete_title, chosen.size)) },
+            text = { Text(if (favoritesOnly) "Les fichiers resteront dans votre bibliothèque." else stringResource(R.string.sel_delete_text)) },
             confirmButton = {
                 TextButton(onClick = {
-                    chosen.forEach { Engine.delete(it) }
-                    Toast.makeText(context, context.getString(R.string.sel_deleted, chosen.size), Toast.LENGTH_SHORT).show()
+                    if (favoritesOnly) chosen.forEach { Engine.toggleFavorite(it) } else chosen.forEach { Engine.delete(it) }
+                    Toast.makeText(context, if (favoritesOnly) "Favoris retirés" else context.getString(R.string.sel_deleted, chosen.size), Toast.LENGTH_SHORT).show()
                     confirm = false
                     selection.finish()
                 }) { Text(stringResource(R.string.sel_delete), color = Color(0xFFFF5252)) }
@@ -327,10 +328,10 @@ private fun Header(context: Context, canSelect: Boolean) {
                             }
                             DropdownMenuItem(text = { Text(label) }, onClick = { model.videoSort = sort; layoutMenu = false })
                         }
-                        listOf("grid2", "grid4", "grid8", "list", "detail").forEach { mode ->
+                        listOf("grid2", "grid4", "grid6", "list", "detail").forEach { mode ->
                             val label = when (mode) {
                                 "grid4" -> stringResource(R.string.layout_grid4)
-                                "grid8" -> stringResource(R.string.layout_grid8)
+                                "grid6" -> stringResource(R.string.layout_grid6)
                                 "list" -> stringResource(R.string.layout_list)
                                 "detail" -> stringResource(R.string.layout_detail)
                                 else -> stringResource(R.string.layout_grid2)

@@ -36,6 +36,8 @@ struct VideoPlayerView: View {
     @State private var noticeText: String?
     @State private var generatingSubtitles = false
     @State private var subtitleOptionsOpen = false
+    @State private var moreOptionsOpen = false
+    @State private var episodeListOpen = false
 
     private static let speeds: [Float] = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]
 
@@ -106,6 +108,26 @@ struct VideoPlayerView: View {
                         .transition(.opacity)
                 }
 
+                if subtitleOptionsOpen {
+                    persistentPlayerPanel(subtitleOptionsSheet, landscape: landscape) {
+                        subtitleOptionsOpen = false
+                        scheduleHide()
+                    }
+                    .zIndex(20)
+                } else if moreOptionsOpen {
+                    persistentPlayerPanel(moreOptionsPanel, landscape: landscape) {
+                        moreOptionsOpen = false
+                        scheduleHide()
+                    }
+                    .zIndex(20)
+                } else if episodeListOpen {
+                    persistentPlayerPanel(episodeListPanel, landscape: landscape) {
+                        episodeListOpen = false
+                        scheduleHide()
+                    }
+                    .zIndex(20)
+                }
+
                 if let text = noticeText {
                     VStack {
                         Text(text)
@@ -136,6 +158,9 @@ struct VideoPlayerView: View {
         .onChange(of: video.isPlaying) { playing in
             if playing { scheduleHide() } else { showControls(autoHide: false) }
         }
+        .onChange(of: subtitleOptionsOpen) { open in if !open { scheduleHide() } }
+        .onChange(of: moreOptionsOpen) { open in if !open { scheduleHide() } }
+        .onChange(of: episodeListOpen) { open in if !open { scheduleHide() } }
         .onChange(of: video.index) { _ in
             autoRotate()
         }
@@ -145,11 +170,6 @@ struct VideoPlayerView: View {
         .sheet(item: $watermarkTrack) { track in
             WatermarkView(track: track)
                 .environmentObject(model)
-        }
-        .sheet(isPresented: $subtitleOptionsOpen) {
-            subtitleOptionsSheet
-                .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.visible)
         }
         .fileImporter(isPresented: $importingSubtitle, allowedContentTypes: subtitleTypes,
                       allowsMultipleSelection: false) { result in
@@ -245,8 +265,9 @@ struct VideoPlayerView: View {
 
     private func scheduleHide() {
         hideWork?.cancel()
+        guard !subtitleOptionsOpen, !moreOptionsOpen, !episodeListOpen else { return }
         let work = DispatchWorkItem {
-            if video.isPlaying && !scrubbing {
+            if video.isPlaying && !scrubbing && !subtitleOptionsOpen && !moreOptionsOpen && !episodeListOpen {
                 withAnimation(.easeOut(duration: 0.3)) { controlsVisible = false }
             }
         }
@@ -603,6 +624,16 @@ struct VideoPlayerView: View {
                         .frame(width: 40, height: 40)
                 }
             }
+            if video.items.count > 1 {
+                Button {
+                    hideWork?.cancel()
+                    episodeListOpen = true
+                } label: {
+                    Image(systemName: "list.bullet")
+                        .font(.system(size: 18, weight: .semibold))
+                        .frame(width: 40, height: 40)
+                }
+            }
             subtitleMenu
             moreMenu
         }
@@ -613,6 +644,7 @@ struct VideoPlayerView: View {
         Button {
             hideWork?.cancel()
             subtitleOptionsOpen = true
+            controlsVisible = true
         } label: {
             Image(systemName: video.hasSubtitles ? "captions.bubble.fill" : "captions.bubble")
                 .font(.system(size: 18, weight: .semibold))
@@ -674,8 +706,90 @@ struct VideoPlayerView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button(L("Fermer")) { subtitleOptionsOpen = false } } }
         }
-        .onAppear { hideWork?.cancel() }
-        .onDisappear { if video.isPlaying { scheduleHide() } }
+    }
+
+    private func persistentPlayerPanel<Content: View>(_ content: Content, landscape: Bool, close: @escaping () -> Void) -> some View {
+        ZStack(alignment: .topTrailing) {
+            Color.black.opacity(0.48).ignoresSafeArea().onTapGesture { close() }
+            content
+                .frame(width: min(440, UIScreen.main.bounds.width - 28),
+                       height: min(UIScreen.main.bounds.height * (landscape ? 0.88 : 0.72), 720))
+                .background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 18))
+                .clipShape(RoundedRectangle(cornerRadius: 18))
+                .overlay(alignment: .topTrailing) {
+                    Button(action: close) {
+                        Image(systemName: "xmark.circle.fill").font(.system(size: 25)).foregroundStyle(.secondary)
+                    }.padding(12)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .foregroundStyle(.primary)
+    }
+
+    private var episodeListPanel: some View {
+        NavigationStack {
+            List(Array(video.items.enumerated()), id: \.element.id) { index, track in
+                Button {
+                    video.playEpisode(at: index)
+                    episodeListOpen = false
+                    showControls()
+                } label: {
+                    HStack(spacing: 12) {
+                        Text("\(index + 1)").foregroundStyle(.secondary).frame(width: 28, alignment: .trailing)
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(library.title(track)).lineLimit(2)
+                            Text(track.fileURL.lastPathComponent).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                        }
+                        Spacer()
+                        if index == video.index { Image(systemName: "waveform").foregroundStyle(Color.brand) }
+                    }
+                }.buttonStyle(.plain)
+            }
+            .navigationTitle(L("Épisodes"))
+            .navigationBarTitleDisplayMode(.inline)
+        }
+    }
+
+    private var moreOptionsPanel: some View {
+        NavigationStack {
+            List {
+                Section(L("Vitesse")) {
+                    ForEach(VideoPlayerView.speeds, id: \.self) { value in
+                        Button { video.setRate(value) } label: {
+                            HStack { Text(speedText(value)); Spacer(); if video.rate == value { Image(systemName: "checkmark") } }
+                        }
+                    }
+                }
+                if !video.audioOptions.isEmpty {
+                    Section(L("Piste audio")) {
+                        ForEach(video.audioOptions, id: \.self) { option in
+                            Button { video.selectAudio(option) } label: {
+                                HStack { Text(VideoPlayerModel.optionName(option)); Spacer(); if video.selectedAudio == option { Image(systemName: "checkmark") } }
+                            }
+                        }
+                    }
+                }
+                Section(L("Lecture")) {
+                    Button { video.repeatOne.toggle() } label: { Label(L("Répéter cette vidéo"), systemImage: video.repeatOne ? "checkmark" : "repeat.1") }
+                    Button { video.setSleep(minutes: 0) } label: { Label(L("Minuterie désactivée"), systemImage: "moon.zzz") }
+                    ForEach([15, 30, 45, 60, 90], id: \.self) { minutes in
+                        Button(L("Arrêt dans {n} min", ["n": "\(minutes)"])) { video.setSleep(minutes: minutes) }
+                    }
+                    Button { withAnimation { video.fill.toggle() } } label: { Label(video.fill ? L("Image entière") : L("Remplir l'écran"), systemImage: "arrow.up.left.and.arrow.down.right") }
+                    Button { toggleRotationLock() } label: { Label(rotationLocked ? L("Déverrouiller la rotation") : L("Verrouiller la rotation"), systemImage: "lock.rotation") }
+                }
+                Section {
+                    Button { video.snapshot { image in if let image { UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil); showNotice(L("Capture enregistrée dans Photos")) } } } label: { Label(L("Capture d'écran"), systemImage: "camera") }
+                    if let track = video.current {
+                        Button { video.pause(); moreOptionsOpen = false; model.compress(track) } label: { Label(L("Compresser une copie"), systemImage: "arrow.down.right.and.arrow.up.left") }
+                        Button { video.pause(); moreOptionsOpen = false; watermarkTrack = track } label: { Label(L("Retirer un filigrane…"), systemImage: "wand.and.stars") }
+                        ShareLink(item: track.fileURL) { Label(L("Partager"), systemImage: "square.and.arrow.up") }
+                    }
+                }
+            }
+            .navigationTitle(L("Options du lecteur"))
+            .navigationBarTitleDisplayMode(.inline)
+        }
     }
 
     private var speechLanguageName: String {
@@ -694,6 +808,19 @@ struct VideoPlayerView: View {
     }
 
     private var moreMenu: some View {
+        Button {
+            hideWork?.cancel()
+            controlsVisible = true
+            moreOptionsOpen = true
+        } label: {
+            Image(systemName: "ellipsis.circle")
+                .font(.system(size: 19, weight: .semibold))
+                .frame(width: 40, height: 40)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var legacyMoreMenu: some View {
         Menu {
             Menu {
                 ForEach(VideoPlayerView.speeds, id: \.self) { value in

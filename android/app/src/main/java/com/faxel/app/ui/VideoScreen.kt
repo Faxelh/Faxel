@@ -37,6 +37,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -50,6 +51,7 @@ import androidx.compose.material.icons.rounded.Forward10
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.LockOpen
 import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material.icons.rounded.FormatListBulleted
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PictureInPictureAlt
 import androidx.compose.material.icons.rounded.PlayArrow
@@ -438,6 +440,11 @@ fun VideoScreen(onClose: () -> Unit) {
                                 color = Color.White.copy(alpha = 0.65f), fontSize = 12.sp)
                         }
                     }
+                    if (VideoState.files.size > 1) {
+                        IconButton(onClick = { menu = "episodes"; show() }) {
+                            Icon(Icons.Rounded.FormatListBulleted, "Épisodes", tint = Color.White)
+                        }
+                    }
                     Box {
                         IconButton(onClick = { menu = "subs"; show() }) { Icon(Icons.Rounded.ClosedCaption, null, tint = Color.White) }
                         TrackMenu(menu == "subs", C.TRACK_TYPE_TEXT, allowOff = true) { menu = null }
@@ -534,6 +541,28 @@ fun VideoScreen(onClose: () -> Unit) {
             }
         }
     }
+
+        if (menu == "episodes") {
+            AlertDialog(
+                onDismissRequest = { menu = null },
+                title = { Text("Épisodes") },
+                text = {
+                    androidx.compose.foundation.lazy.LazyColumn {
+                        items(VideoState.files.size) { episode ->
+                            val file = VideoState.files[episode]
+                            androidx.compose.material3.TextButton(
+                                onClick = { VideoState.playEpisode(episode); menu = null; show() },
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Text((if (episode == VideoState.index) "▶  " else "") + file.nameWithoutExtension,
+                                    maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.fillMaxWidth())
+                            }
+                        }
+                    }
+                },
+                confirmButton = { androidx.compose.material3.TextButton(onClick = { menu = null }) { Text("Fermer") } },
+            )
+        }
 
     watermarkFile?.let { file ->
         WatermarkScreen(file, onClose = { watermarkFile = null })

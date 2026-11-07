@@ -233,6 +233,14 @@ object VideoState {
         if (exo.hasNextMediaItem()) exo.seekToNextMediaItem()
     }
 
+    fun playEpisode(target: Int) {
+        val exo = player ?: return
+        if (target !in files.indices || target == index) return
+        savePosition()
+        exo.seekTo(target, 0L)
+        exo.play()
+    }
+
     fun previous() {
         val exo = player ?: return
         if (exo.currentPosition > 5_000 || !exo.hasPreviousMediaItem()) exo.seekTo(0) else exo.seekToPreviousMediaItem()

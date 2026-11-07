@@ -7,7 +7,7 @@
     <string name="home_compress_hint">Eine kleinere Kopie erstellen und das Original behalten</string>
     <string name="layout_grid2">Raster 2 × 2</string>
     <string name="layout_grid4">Raster 4 × 4</string>
-    <string name="layout_grid8">Raster 8 × 8</string>
+    <string name="layout_grid6">Raster 6 × 6</string>
     <string name="layout_list">Liste</string>
     <string name="layout_detail">Detaillierte Liste</string>
     <string name="bass">Bass</string>

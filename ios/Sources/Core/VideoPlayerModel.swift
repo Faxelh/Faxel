@@ -366,6 +366,13 @@ final class VideoPlayerModel: NSObject, ObservableObject, AVPictureInPictureCont
         load()
     }
 
+    func playEpisode(at target: Int) {
+        guard items.indices.contains(target), target != index else { return }
+        savePosition()
+        index = target
+        load()
+    }
+
     func previous() {
         if currentTime > 5 || !hasPrevious {
             seek(to: 0)

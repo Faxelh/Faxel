@@ -621,7 +621,7 @@ struct VideosView: View {
                     }
                     Button { layout = "grid2" } label: { Label(L("Grille 2 × 2"), systemImage: layout == "grid2" ? "checkmark" : "square.grid.2x2") }
                     Button { layout = "grid4" } label: { Label(L("Grille 4 × 4"), systemImage: layout == "grid4" ? "checkmark" : "square.grid.3x3") }
-                    Button { layout = "grid8" } label: { Label(L("Grille 8 × 8"), systemImage: layout == "grid8" ? "checkmark" : "circle.grid.3x3") }
+                    Button { layout = "grid6" } label: { Label(L("Grille 6 × 6"), systemImage: layout == "grid6" ? "checkmark" : "circle.grid.3x3") }
                     Button { layout = "list" } label: { Label(L("Liste"), systemImage: layout == "list" ? "checkmark" : "list.bullet") }
                     Button { layout = "detail" } label: { Label(L("Liste détaillée"), systemImage: layout == "detail" ? "checkmark" : "list.bullet.rectangle") }
                 } label: {
@@ -630,6 +630,7 @@ struct VideosView: View {
             }
         }
         .onAppear {
+            if layout == "grid8" { layout = "grid6" }
             if !folder.isEmpty && !groups.contains(where: { $0.name == folder }) { folder = "" }
         }
         .trackSheets(picking: $picking, deleting: $deleting)
@@ -638,7 +639,7 @@ struct VideosView: View {
     private var gridColumnCount: Int? {
         switch layout {
         case "grid4": return 4
-        case "grid8": return 8
+        case "grid6": return 6
         case "list", "detail": return nil
         default: return 2
         }
@@ -1011,6 +1012,9 @@ struct DownloadsListView: View {
     @State private var confirmClear = false
     @State private var previewItems: [URL] = []
     @State private var previewURL: URL?
+    @State private var selectingFavorites = false
+    @State private var selectedFavoriteIDs: Set<String> = []
+    @State private var confirmRemoveFavorites = false
     @State private var creatingFolder = false
     @State private var newFolderName = ""
 
@@ -1207,8 +1211,20 @@ struct CollectionView: View {
                         .listRowSeparator(.hidden)
                 } else {
                     ForEach(Array(list.enumerated()), id: \.element.id) { index, track in
-                        TrackRow(track: track, onTap: { open(track, in: list, at: index) }) {
-                            menu(for: track)
+                        HStack(spacing: 10) {
+                            if selectingFavorites {
+                                SelectionCheck(selected: selectedFavoriteIDs.contains(track.id))
+                            }
+                            TrackRow(track: track, onTap: {
+                                if selectingFavorites {
+                                    if selectedFavoriteIDs.contains(track.id) { selectedFavoriteIDs.remove(track.id) }
+                                    else { selectedFavoriteIDs.insert(track.id) }
+                                } else {
+                                    open(track, in: list, at: index)
+                                }
+                            }) {
+                                menu(for: track)
+                            }
                         }
                         .contextMenu {
                             menu(for: track)
@@ -1226,9 +1242,35 @@ struct CollectionView: View {
         }
         .listStyle(.plain)
         .navigationTitle(title)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if selectingFavorites {
+                HStack {
+                    Button(selectedFavoriteIDs.count == tracks.count ? L("Tout désélectionner") : L("Tout sélectionner")) {
+                        selectedFavoriteIDs = selectedFavoriteIDs.count == tracks.count ? [] : Set(tracks.map(\.id))
+                    }
+                    Spacer()
+                    Text(L("{count} sélectionné(s)", ["count": "\(selectedFavoriteIDs.count)"]))
+                        .font(.system(size: 14, weight: .medium)).foregroundStyle(.secondary)
+                }
+                .padding(.horizontal, 18).padding(.vertical, 14)
+                .background(.ultraThinMaterial)
+            }
+        }
         .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                if case .favorites = route {
+                    Button(selectingFavorites ? L("Annuler") : L("Sélectionner")) {
+                        selectingFavorites.toggle()
+                        selectedFavoriteIDs.removeAll()
+                    }
+                }
+            }
             ToolbarItem(placement: .navigationBarTrailing) {
-                if let playlist = playlist {
+                if selectingFavorites && !selectedFavoriteIDs.isEmpty {
+                    Button(role: .destructive) { confirmRemoveFavorites = true } label: {
+                        Image(systemName: "trash")
+                    }
+                } else if let playlist = playlist {
                     Menu {
                         Button {
                             newName = playlist.name
@@ -1264,6 +1306,16 @@ struct CollectionView: View {
             Button(L("Annuler"), role: .cancel) {}
         } message: {
             Text(L("Les fichiers restent dans votre bibliothèque."))
+        }
+        .confirmationDialog(L("Retirer les favoris sélectionnés ?"), isPresented: $confirmRemoveFavorites, titleVisibility: .visible) {
+            Button(L("Retirer"), role: .destructive) {
+                for track in tracks where selectedFavoriteIDs.contains(track.id) { model.toggleFavorite(track) }
+                selectingFavorites = false
+                selectedFavoriteIDs.removeAll()
+            }
+            Button(L("Annuler"), role: .cancel) {}
+        } message: {
+            Text(L("Les fichiers resteront dans votre bibliothèque."))
         }
         .trackSheets(picking: $picking, deleting: $deleting)
         .quickLookPreview($previewURL, in: previewItems)
