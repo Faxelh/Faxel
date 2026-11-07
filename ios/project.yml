@@ -45,6 +45,7 @@ targets:
         NSLocalNetworkUsageDescription: "Faxel reçoit les fichiers envoyés depuis votre ordinateur par Wi-Fi (Transfert Wi-Fi)."
         NSPhotoLibraryAddUsageDescription: "Faxel ajoute les vidéos et photos téléchargées à votre app Photos."
         NSPhotoLibraryUsageDescription: "Faxel utilise votre photothèque pour enregistrer et importer vos vidéos et photos."
+        NSSpeechRecognitionUsageDescription: "Faxel utilise la reconnaissance vocale sur cet iPhone pour créer des sous-titres à partir de vos vidéos."
         CFBundleDocumentTypes:
           - CFBundleTypeName: "Audio"
             CFBundleTypeRole: Viewer

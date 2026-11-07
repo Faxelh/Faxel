@@ -1,7 +1,9 @@
 package com.faxel.app.ui
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -11,10 +13,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.Language
+import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.VideoLibrary
 import androidx.compose.material3.Icon
@@ -23,12 +27,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.faxel.app.R
+import com.faxel.app.data.Prefs
+import coil.compose.AsyncImage
 
 @Composable
 fun HomeScreen(onNavigate: (Tab) -> Unit) {
@@ -38,9 +45,16 @@ fun HomeScreen(onNavigate: (Tab) -> Unit) {
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item {
-            Column(Modifier.padding(vertical = 12.dp)) {
-                Text("Faxel", color = androidx.compose.ui.graphics.Color.White, fontSize = 32.sp, fontWeight = FontWeight.Bold)
-                Text(stringResource(R.string.home_subtitle), color = Muted, fontSize = 15.sp)
+            Row(Modifier.fillMaxWidth().padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.size(54.dp).clip(CircleShape).background(Surface2), contentAlignment = Alignment.Center) {
+                    if (Prefs.profilePhoto.value.isNotBlank()) AsyncImage(Prefs.profilePhoto.value, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                    else Icon(Icons.Rounded.Person, null, tint = Muted, modifier = Modifier.size(32.dp))
+                }
+                Spacer(Modifier.size(12.dp))
+                Column {
+                    Text(Prefs.profileName.value, color = androidx.compose.ui.graphics.Color.White, fontSize = 25.sp, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.home_subtitle), color = Muted, fontSize = 14.sp)
+                }
             }
         }
         item { HomeAction(Icons.Rounded.Download, stringResource(R.string.tab_download), stringResource(R.string.home_download_hint)) { onNavigate(Tab.Download) } }

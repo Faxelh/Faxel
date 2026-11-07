@@ -9,6 +9,8 @@ struct FaxelApp: App {
     @StateObject private var browser = BrowserModel()
     @AppStorage("theme") private var theme = "system"
     @AppStorage("language") private var language = "system"
+    @AppStorage("faxelAccentHex") private var accentHex = "8B5CF6"
+    @AppStorage("faxelProfilePhotoPath") private var profilePhotoPath = ""
     @Environment(\.scenePhase) private var scenePhase
 
     init() {
@@ -32,7 +34,7 @@ struct FaxelApp: App {
                 .environmentObject(video)
                 .environmentObject(browser)
                 .environmentObject(model.jobStore)
-                .tint(.brand)
+                .tint(Color.hex(accentHex))
                 .preferredColorScheme(scheme)
                 .id(language)
                 .onAppear {
@@ -60,9 +62,14 @@ struct RootView: View {
     @EnvironmentObject var video: VideoPlayerModel
     @EnvironmentObject var browser: BrowserModel
     @EnvironmentObject var jobStore: JobStore
+    @State private var showQueue = false
 
     private var activeCount: Int {
         jobStore.jobs.filter { $0.active }.count
+    }
+
+    private var failedCount: Int {
+        jobStore.jobs.filter(\.isFailed).count
     }
 
     /// L'onglet Navigateur ne change pas d'écran : il fait glisser le navigateur depuis la droite.
@@ -102,6 +109,8 @@ struct RootView: View {
                 .tabItem { Label(L("Navigateur"), systemImage: "globe") }
                 .tag(AppTab.browser)
         }
+        .toolbar(.hidden, for: .tabBar)
+        .safeAreaInset(edge: .bottom, spacing: 0) { faxelDock }
         .overlay {
             if model.showBrowser {
                 BrowserView()
@@ -143,6 +152,11 @@ struct RootView: View {
                 .environmentObject(browser)
                 .environmentObject(jobStore)
         }
+        .sheet(isPresented: $showQueue) {
+            DownloadQueueView()
+                .environmentObject(model)
+                .environmentObject(jobStore)
+        }
         .fullScreenCover(item: $model.videoSession) { session in
             VideoPlayerView(session: session)
                 .environmentObject(model)
@@ -156,6 +170,108 @@ struct RootView: View {
                 model.lockVault()
             }
         }
+    }
+
+    private var faxelDock: some View {
+        HStack(spacing: 3) {
+            dockButton("house.fill", label: L("Accueil"), selected: model.tab == .home) { model.tab = .home }
+            dockButton("play.rectangle", label: L("Bibliothèque"), selected: model.tab == .library) { model.tab = .library }
+            dockButton("storefront", label: L("Télécharger"), selected: model.tab == .download, badge: activeCount) { model.tab = .download }
+            dockButton("person.3", label: L("Navigateur"), selected: model.showBrowser) {
+                withAnimation(.spring(response: 0.42, dampingFraction: 0.9)) { model.showBrowser = true }
+            }
+            dockButton("bell", label: L("Téléchargements"), selected: showQueue, badge: failedCount) { showQueue = true }
+            Button {
+                model.tab = .settings
+            } label: {
+                Group {
+                    if !profilePhotoPath.isEmpty, let profileImage = UIImage(contentsOfFile: profilePhotoPath) {
+                        Image(uiImage: profileImage).resizable().scaledToFill()
+                    } else {
+                        Image("Logo").resizable().scaledToFill()
+                    }
+                }
+                    .frame(width: 34, height: 34).clipShape(Circle())
+                    .overlay(Circle().stroke(Color.white.opacity(0.9), lineWidth: 1.5))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 52)
+                    .background {
+                        if model.tab == .settings { Capsule().fill(Color.white.opacity(0.12)) }
+                    }
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(L("Réglages"))
+        }
+        .padding(7)
+        .background(Color(red: 0.12, green: 0.12, blue: 0.13), in: Capsule())
+        .overlay(Capsule().stroke(Color.white.opacity(0.13), lineWidth: 1))
+        .padding(.horizontal, 18)
+        .padding(.top, 5)
+        .padding(.bottom, 7)
+        .background(LinearGradient(colors: [Color.clear, Color.black.opacity(0.35)], startPoint: .top, endPoint: .bottom))
+    }
+
+    private func dockButton(_ icon: String, label: String, selected: Bool, badge: Int = 0,
+                            action: @escaping () -> Void) -> some View {
+        return Button {
+            action()
+        } label: {
+            Image(systemName: icon)
+                .font(.system(size: 25, weight: selected ? .semibold : .regular))
+                .foregroundStyle(selected ? .white : Color.white.opacity(0.9))
+                .frame(maxWidth: .infinity)
+                .frame(height: 52)
+                .background {
+                    if selected { Capsule().fill(Color.white.opacity(0.12)) }
+                }
+                .overlay(alignment: .topTrailing) {
+                    if badge > 0 {
+                        Text(badge > 99 ? "99+" : "\(badge)")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 5)
+                            .frame(minWidth: 18, minHeight: 18)
+                            .background(Color.red, in: Capsule())
+                            .offset(x: -2, y: -2)
+                    }
+                }
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(label)
+    }
+}
+
+private struct DownloadQueueView: View {
+    @EnvironmentObject private var model: AppModel
+    @EnvironmentObject private var store: JobStore
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                if store.jobs.isEmpty {
+                    VStack(spacing: 10) {
+                        Image(systemName: "bell").font(.system(size: 34)).foregroundStyle(.secondary)
+                        Text(L("Aucun téléchargement")).font(.headline)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 50)
+                } else {
+                    JobsSection(store: store)
+                        .padding(.top, 12)
+                }
+            }
+            .navigationTitle(L("Téléchargements"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(L("Fermer")) { dismiss() }
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
     }
 }
 

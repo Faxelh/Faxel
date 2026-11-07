@@ -1,6 +1,9 @@
 package com.faxel.app.ui
 
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -38,6 +41,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AddAPhoto
+import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
 import androidx.core.os.LocaleListCompat
 import com.faxel.app.R
 import com.faxel.app.data.Prefs
@@ -55,10 +66,28 @@ fun SettingsScreen() {
     val lang = AppCompatDelegate.getApplicationLocales().toLanguageTags().substringBefore('-')
     val engine = Engine.settings
     var rescanned by remember { mutableStateOf<Int?>(null) }
+    val profilePicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri != null) {
+            runCatching { context.contentResolver.takePersistableUriPermission(uri, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION) }
+            Prefs.profilePhoto.value = uri.toString()
+        }
+    }
+    val backgroundPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri != null) {
+            runCatching { context.contentResolver.takePersistableUriPermission(uri, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION) }
+            Prefs.playerBackgroundPhoto.value = uri.toString()
+            Prefs.playerBackground.value = "photo"
+        }
+    }
 
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
         LazyColumn(Modifier.fillMaxSize().widthIn(max = 720.dp), contentPadding = PaddingValues(bottom = 32.dp)) {
             item { ScreenTitle(stringResource(R.string.tab_settings)) }
+
+            item { Group(stringResource(R.string.profile)) }
+            item { ProfileSection(onRemovePhoto = { Prefs.profilePhoto.value = "" }) {
+                profilePicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+            } }
 
             item { Group(stringResource(R.string.general)) }
             item {
@@ -85,6 +114,8 @@ fun SettingsScreen() {
                     }
                 }
             }
+            item { Group(stringResource(R.string.player_appearance)) }
+            item { Toggle(stringResource(R.string.player_animations), "", Prefs.playerAnimations.value) { Prefs.playerAnimations.value = it } }
 
             item { Group(stringResource(R.string.downloads)) }
             item {
@@ -122,6 +153,36 @@ fun SettingsScreen() {
             }
 
             item { Group(stringResource(R.string.player)) }
+            item {
+                ChoiceText(
+                    stringResource(R.string.player_background),
+                    listOf(
+                        "artwork" to stringResource(R.string.player_background_artwork),
+                        "photo" to stringResource(R.string.player_background_photo),
+                        "gradient" to stringResource(R.string.player_background_gradient),
+                        "black" to stringResource(R.string.player_background_black),
+                    ), Prefs.playerBackground.value,
+                ) { value ->
+                    if (value == "photo") backgroundPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                    else Prefs.playerBackground.value = value
+                }
+            }
+            item {
+                ChoiceText(
+                    stringResource(R.string.player_cover),
+                    listOf("cassette" to stringResource(R.string.cover_cassette), "vinyl" to stringResource(R.string.cover_vinyl), "square" to stringResource(R.string.cover_square)),
+                    Prefs.playerCover.value,
+                ) { Prefs.playerCover.value = it }
+            }
+            item {
+                ChoiceText(
+                    stringResource(R.string.visualizer),
+                    listOf("bars" to stringResource(R.string.visualizer_bars), "wave" to stringResource(R.string.visualizer_wave), "none" to stringResource(R.string.visualizer_none)),
+                    Prefs.visualizerStyle.value,
+                ) { Prefs.visualizerStyle.value = it }
+                Text(stringResource(R.string.visualizer_permission_hint), color = Muted, fontSize = 12.sp, modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
+            }
+            item { Toggle(stringResource(R.string.dim_player_background), "", Prefs.dimPlayerBackground.value) { Prefs.dimPlayerBackground.value = it } }
             item { Toggle(stringResource(R.string.auto_subtitles), stringResource(R.string.auto_subtitles_hint), Prefs.autoSubtitles.value) { Prefs.autoSubtitles.value = it } }
             item { Toggle(stringResource(R.string.auto_pip), "", Prefs.autoPip.value) { Prefs.autoPip.value = it } }
 
@@ -164,6 +225,50 @@ fun SettingsScreen() {
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun ProfileSection(onRemovePhoto: () -> Unit, onChoosePhoto: () -> Unit) {
+    val photo = Prefs.profilePhoto.value
+    val audio = Engine.entries.filter { it.isAudio && it.exists }
+    val count = audio.size
+    val duration = audio.sumOf { it.duration ?: 0.0 }
+    val size = audio.sumOf { it.filesize ?: 0.0 }
+    Column(
+        Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)
+            .clip(RoundedCornerShape(18.dp)).background(Surface1),
+    ) {
+        Row(
+            Modifier.fillMaxWidth().clickable(onClick = onChoosePhoto).padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(Modifier.size(74.dp).clip(CircleShape).background(Surface2), contentAlignment = Alignment.Center) {
+                if (photo.isNotBlank()) AsyncImage(photo, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                else Icon(Icons.Rounded.Person, null, tint = Muted, modifier = Modifier.size(42.dp))
+                Icon(Icons.Rounded.AddAPhoto, null, tint = Color.White, modifier = Modifier.align(Alignment.BottomEnd)
+                    .clip(CircleShape).background(accent).padding(5.dp).size(20.dp))
+            }
+            Spacer(Modifier.size(14.dp))
+            Column(Modifier.weight(1f)) {
+                Text(Prefs.profileName.value, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.profile_stats, count, formatTime(duration), formatSize(size)), color = Muted, fontSize = 12.sp)
+            }
+        }
+        OutlinedTextField(
+            value = Prefs.profileName.value,
+            onValueChange = { Prefs.profileName.value = it.take(32) },
+            singleLine = true,
+            label = { Text(stringResource(R.string.profile_name)) },
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 4.dp),
+        )
+        if (photo.isNotBlank()) {
+            Text(
+                stringResource(R.string.profile_remove_photo), color = Color(0xFFFF596C), fontSize = 14.sp,
+                modifier = Modifier.fillMaxWidth().clickable(onClick = onRemovePhoto)
+                    .padding(horizontal = 18.dp, vertical = 14.dp),
+            )
         }
     }
 }

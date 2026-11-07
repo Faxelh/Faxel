@@ -33,6 +33,10 @@ struct VideoPlayerView: View {
     @State private var pinchHandled = false
     @State private var importingSubtitle = false
     @State private var noticeText: String?
+    @State private var subtitleMenuPresented = false
+    @State private var moreMenuPresented = false
+    @State private var speedMenuPresented = false
+    @State private var generatingSubtitles = false
 
     private static let speeds: [Float] = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]
 
@@ -123,6 +127,7 @@ struct VideoPlayerView: View {
         .persistentSystemOverlays(.hidden)
         .preferredColorScheme(.dark)
         .onAppear(perform: start)
+        .onChange(of: session.id) { _ in start() }
         .onDisappear(perform: finish)
         .onChange(of: video.notice) { text in
             guard let text = text else { return }
@@ -132,6 +137,9 @@ struct VideoPlayerView: View {
         .onChange(of: video.isPlaying) { playing in
             if playing { scheduleHide() } else { showControls(autoHide: false) }
         }
+        .onChange(of: subtitleMenuPresented) { presented in menuVisibilityChanged(presented) }
+        .onChange(of: moreMenuPresented) { presented in menuVisibilityChanged(presented) }
+        .onChange(of: speedMenuPresented) { presented in menuVisibilityChanged(presented) }
         .onChange(of: video.index) { _ in
             autoRotate()
         }
@@ -166,7 +174,9 @@ struct VideoPlayerView: View {
     private func start() {
         Orientation.allow(.allButUpsideDown)
         // Retour depuis l'Image dans l'image : même file déjà en cours, on ne relance pas.
-        let sameContent = video.current != nil && video.items.map { $0.id } == session.items.map { $0.id }
+        let sameContent = video.current != nil
+            && video.items.map { $0.id } == session.items.map { $0.id }
+            && video.index == session.start
         if !sameContent {
             video.open(session.items, start: session.start)
         }
@@ -241,6 +251,30 @@ struct VideoPlayerView: View {
         }
         hideWork = work
         DispatchQueue.main.asyncAfter(deadline: .now() + 3.5, execute: work)
+    }
+
+    private func menuVisibilityChanged(_ presented: Bool) {
+        if presented { hideWork?.cancel() }
+        else { scheduleHide() }
+    }
+
+    private func generateSubtitles() {
+        guard let track = video.current else { return }
+        generatingSubtitles = true
+        showControls(autoHide: false)
+        showNotice(L("Génération des sous-titres sur cet iPhone…"))
+        AISubtitleGenerator.generate(from: track.fileURL, localeIdentifier: Lang.code) { result in
+            generatingSubtitles = false
+            switch result {
+            case .success(let url):
+                video.importSubtitle(url)
+                try? FileManager.default.removeItem(at: url)
+                showNotice(L("Sous-titres IA ajoutés à cette vidéo."))
+            case .failure(let error):
+                showNotice(error.localizedDescription)
+            }
+            scheduleHide()
+        }
     }
 
     private func showNotice(_ text: String) {
@@ -580,7 +614,7 @@ struct VideoPlayerView: View {
     }
 
     private var subtitleMenu: some View {
-        Menu {
+        Menu(isPresented: $subtitleMenuPresented) {
             Button {
                 video.subtitlesOff()
             } label: {
@@ -621,6 +655,16 @@ struct VideoPlayerView: View {
                 }
             }
             Section {
+                Button {
+                    generateSubtitles()
+                } label: {
+                    if generatingSubtitles {
+                        Label(L("Génération des sous-titres…"), systemImage: "waveform")
+                    } else {
+                        Label(L("Générer des sous-titres avec l'IA"), systemImage: "sparkles")
+                    }
+                }
+                .disabled(generatingSubtitles)
                 Button {
                     importingSubtitle = true
                 } label: {
@@ -669,7 +713,7 @@ struct VideoPlayerView: View {
     }
 
     private var moreMenu: some View {
-        Menu {
+        Menu(isPresented: $moreMenuPresented) {
             Menu {
                 ForEach(VideoPlayerView.speeds, id: \.self) { value in
                     Button {
@@ -733,6 +777,12 @@ struct VideoPlayerView: View {
                 Label(L("Capture d'écran"), systemImage: "camera")
             }
             if let track = video.current {
+                Button {
+                    video.pause()
+                    model.compress(track)
+                } label: {
+                    Label(L("Compresser une copie"), systemImage: "arrow.down.right.and.arrow.up.left")
+                }
                 Button {
                     video.pause()
                     watermarkTrack = track
@@ -862,7 +912,7 @@ struct VideoPlayerView: View {
                     scheduleHide()
                 }
                 Spacer()
-                Menu {
+                Menu(isPresented: $speedMenuPresented) {
                     ForEach(VideoPlayerView.speeds, id: \.self) { value in
                         Button {
                             video.setRate(value)

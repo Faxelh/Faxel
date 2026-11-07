@@ -50,6 +50,15 @@ object Prefs {
     val askedStorage = BoolPref("askedStorage", false)
     val homePage = StringPref("homePage", "")
     val searchEngine = StringPref("searchEngine", "google")
+    val playerCover = StringPref("playerCover", "cassette")
+    val playerBackground = StringPref("playerBackground", "artwork")
+    val playerBackgroundPhoto = StringPref("playerBackgroundPhoto", "")
+    val visualizerStyle = StringPref("visualizerStyle", "bars")
+    val profilePhoto = StringPref("profilePhoto", "")
+    val profileName = StringPref("profileName", "Faxel")
+    val playerAnimations = BoolPref("playerAnimations", true)
+    val dimPlayerBackground = BoolPref("dimPlayerBackground", true)
+    val visualizerPermissionAsked = BoolPref("visualizerPermissionAsked", false)
 
     val bookmarks = mutableStateOf<List<WebLink>>(emptyList())
     val history = mutableStateOf<List<WebLink>>(emptyList())
@@ -58,8 +67,9 @@ object Prefs {
 
     fun init(context: Context) {
         prefs = context.getSharedPreferences("faxel", Context.MODE_PRIVATE)
-        listOf(defaultMedia, defaultQuality, accent, homePage, searchEngine).forEach { it.load(prefs) }
-        listOf(askDownload, oneTapShare, autoSubtitles, autoPip, askedStorage).forEach { it.load(prefs) }
+        listOf(defaultMedia, defaultQuality, accent, homePage, searchEngine, playerCover, playerBackground,
+            playerBackgroundPhoto, visualizerStyle, profilePhoto, profileName).forEach { it.load(prefs) }
+        listOf(askDownload, oneTapShare, autoSubtitles, autoPip, askedStorage, playerAnimations, dimPlayerBackground, visualizerPermissionAsked).forEach { it.load(prefs) }
         bookmarks.value = readLinks("bookmarks")
         history.value = readLinks("history")
     }

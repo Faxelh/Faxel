@@ -1083,11 +1083,16 @@ final class AppModel: ObservableObject {
             show(L("Compression déjà en cours pour ce fichier."), .info)
             return
         }
-        audio?.forget(path: track.path)
         let source = track.fileURL
         let isVideo = !track.isAudio
-        let target = source.deletingPathExtension().appendingPathExtension(isVideo ? "compression.mp4" : "compression.m4a")
-        try? FileManager.default.removeItem(at: target)
+        let extensionName = isVideo ? "mp4" : "m4a"
+        let base = source.deletingLastPathComponent().appendingPathComponent("\(source.deletingPathExtension().lastPathComponent) (compressée)")
+        var target = base.appendingPathExtension(extensionName)
+        var copyNumber = 2
+        while FileManager.default.fileExists(atPath: target.path) {
+            target = URL(fileURLWithPath: base.path + " \(copyNumber)." + extensionName)
+            copyNumber += 1
+        }
         let before = fileSize(track.path)
         compressing.insert(track.path)
         show(L("Compression de « {title} »…", ["title": track.title]), .info)
@@ -1105,18 +1110,9 @@ final class AppModel: ObservableObject {
                 self.show(L("Ce fichier est déjà léger : rien à gagner."), .info)
                 return
             }
-            do {
-                _ = try FileManager.default.replaceItemAt(source, withItemAt: target)
-            } catch {
-                try? FileManager.default.removeItem(at: target)
-                self.show(L("Compression impossible (stockage)."), .error)
-                return
+            self.rescan(force: true) {
+                self.show(L("Copie compressée : {size} (−{saved}).", ["size": Fmt.size(after), "saved": Fmt.size(before - after)]), .ok)
             }
-            self.engine.run("filesize", ["filepath": track.path, "size": after]) { _ in
-                self.refreshLibrary()
-            }
-            self.show(L("Compressé : {size} (−{saved}).", ["size": Fmt.size(after), "saved": Fmt.size(before - after)]),
-                      .ok)
         }
         if isVideo {
             MediaCompressor.compressVideo(source: source, target: target, completion: finish)

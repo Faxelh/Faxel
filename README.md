@@ -2,7 +2,7 @@
 
 **Faxel** est une application pour **iPhone et Android** qui réunit un navigateur avec téléchargement intégré, un lecteur vidéo/audio et une bibliothèque pour ranger ses fichiers, le tout en français. Un seul dépôt sert les deux plateformes.
 
-Faxel réunit aussi les fonctions multimédias d’Elara : Coffre privé, compression vidéo/audio sur iPhone et transfert Wi‑Fi. Les téléchargements depuis Facebook, YouTube, TikTok, Instagram et X se lancent depuis un lien partagé ou le navigateur intégré.
+Faxel réunit aussi les fonctions multimédias d’Elara : Coffre privé, compression vidéo/audio sur iPhone et transfert Wi‑Fi. Les téléchargements depuis Facebook, YouTube, TikTok, Instagram et X se lancent depuis un lien partagé ou le navigateur intégré. Sur iPhone, le lecteur peut aussi générer des sous-titres en local avec la reconnaissance vocale d’iOS, si la langue choisie et l’appareil le prennent en charge.
 
 ## 📲 Installation
 

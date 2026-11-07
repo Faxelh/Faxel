@@ -7,6 +7,7 @@ struct HomeView: View {
     @EnvironmentObject var player: AudioPlayer
     @ObservedObject private var library = MediaLibrary.shared
     @State private var importing = false
+    @State private var showCompressor = false
 
     private var greeting: String {
         let hour = Calendar.current.component(.hour, from: Date())
@@ -23,6 +24,32 @@ struct HomeView: View {
                             .padding(.horizontal, 16)
                     }
                     quickActions
+                    Button { showCompressor = true } label: {
+                        HStack(spacing: 12) {
+                            Image(systemName: "arrow.down.right.and.arrow.up.left")
+                                .font(.system(size: 21, weight: .semibold))
+                                .foregroundStyle(.white)
+                                .frame(width: 46, height: 46)
+                                .background(Color.brand, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(L("Compresser une vidéo"))
+                                    .font(.system(size: 16, weight: .bold))
+                                    .foregroundStyle(.primary)
+                                Text(L("Créer une version plus légère sans remplacer l'original"))
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(2)
+                            }
+                            Spacer(minLength: 0)
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(14)
+                        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.horizontal, 16)
                     content
                 }
                 .padding(.vertical, 8)
@@ -48,6 +75,10 @@ struct HomeView: View {
             }
             .libraryDestinations()
             .importer(isPresented: $importing)
+            .sheet(isPresented: $showCompressor) {
+                CompressionView()
+                    .environmentObject(model)
+            }
         }
     }
 

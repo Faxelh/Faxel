@@ -1,4 +1,6 @@
 import SwiftUI
+import PhotosUI
+import UIKit
 
 /// Onglet Réglages, organisé comme les Réglages d'iOS.
 struct SettingsView: View {
@@ -21,6 +23,17 @@ struct SettingsView: View {
     @AppStorage("autoLandscape") private var autoLandscape = true
     @AppStorage("autoSubtitles") private var autoSubtitles = true
     @AppStorage("autoNextVideo") private var autoNextVideo = true
+    @AppStorage("faxelAccentHex") private var accentHex = "8B5CF6"
+    @AppStorage("faxelProfileName") private var profileName = "Faxel"
+    @AppStorage("faxelProfilePhotoPath") private var profilePhotoPath = ""
+    @AppStorage("faxelPlayerPhotoPath") private var playerPhotoPath = ""
+    @AppStorage("faxelDimPlayerBackground") private var dimPlayerBackground = true
+    @AppStorage("faxelAnimations") private var playerAnimations = true
+    @AppStorage("faxelCoverStyle") private var coverStyle = "cassette"
+    @AppStorage("faxelVisualizer") private var visualizer = "bars"
+    @AppStorage("faxelBackground") private var playerBackground = "artwork"
+    @State private var profilePicker: PhotosPickerItem?
+    @State private var backgroundPicker: PhotosPickerItem?
     @AppStorage("askDownload") private var askDownload = true
     @AppStorage("allowAV1") private var allowAV1 = true
     @AppStorage("subtitleSize") private var subtitleSize = 2
@@ -32,6 +45,68 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             Form {
+                Section {
+                    HStack(spacing: 14) {
+                        Group {
+                            if let image = UIImage(contentsOfFile: profilePhotoPath), !profilePhotoPath.isEmpty {
+                                Image(uiImage: image).resizable().scaledToFill()
+                            } else {
+                                Image(systemName: "person.crop.circle.fill").resizable().scaledToFit()
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        .frame(width: 64, height: 64).clipShape(Circle())
+                        VStack(alignment: .leading, spacing: 4) {
+                            TextField(L("Nom du profil"), text: $profileName)
+                                .font(.system(size: 18, weight: .semibold))
+                            let songs = model.tracks.filter { $0.mediaType == "audio" }
+                            Text("\(songs.count) \(L("morceaux")) · \(Fmt.duration(songs.compactMap(\.duration).reduce(0, +))) · \(Fmt.size(songs.compactMap(\.filesize).reduce(0, +)) )")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                    PhotosPicker(selection: $profilePicker, matching: .images) {
+                        Label(L("Modifier la photo de profil"), systemImage: "camera")
+                    }
+                    if !profilePhotoPath.isEmpty {
+                        Button(L("Retirer la photo de profil"), role: .destructive) { profilePhotoPath = "" }
+                    }
+                } header: { Text(L("Profil")) }
+                Section {
+                    HStack {
+                        ForEach(["FF2D60", "FF9500", "FFCC00", "34C759", "00C7BE", "0A84FF", "5E5CE6", "AF52DE"], id: \.self) { hex in
+                            Circle().fill(Color.hex(hex)).frame(width: 28, height: 28)
+                                .overlay(Circle().stroke(.white, lineWidth: accentHex == hex ? 2 : 0).padding(2))
+                                .onTapGesture { accentHex = hex }
+                        }
+                    }
+                    Toggle(L("Animations"), isOn: $playerAnimations)
+                } header: { Text(L("Apparence")) }
+                Section {
+                    Picker(L("Fond du lecteur"), selection: $playerBackground) {
+                        Text(L("Pochette" )).tag("artwork")
+                        Text(L("Ma photo")).tag("photo")
+                        Text(L("Dégradé")).tag("aurora")
+                        Text(L("Noir")).tag("black")
+                    }
+                    if playerBackground == "photo" {
+                        PhotosPicker(selection: $backgroundPicker, matching: .images) {
+                            Label(L(playerPhotoPath.isEmpty ? "Choisir une photo" : "Changer la photo de fond"), systemImage: "photo")
+                        }
+                    }
+                    Picker(L("Pochette"), selection: $coverStyle) {
+                        Text(L("Cassette")).tag("cassette")
+                        Text(L("Vinyle")).tag("vinyl")
+                        Text(L("Carré")).tag("square")
+                        Text(L("CD")).tag("cd")
+                        Text(L("Polaroid")).tag("polaroid")
+                    }
+                    Picker(L("Visualiseur"), selection: $visualizer) {
+                        Text(L("Barres")).tag("bars")
+                        Text(L("Onde")).tag("wave")
+                        Text(L("Désactivé")).tag("none")
+                    }
+                    Toggle(L("Assombrir le fond"), isOn: $dimPlayerBackground)
+                } header: { Text(L("Lecteur")) }
                 Section {
                     Button {
                         model.showSearch = true
@@ -298,6 +373,8 @@ struct SettingsView: View {
                     Text(L("Faxel télécharge uniquement les contenus publics, ou ceux auxquels vous avez légitimement accès. Respectez le droit d'auteur et les règles des plateformes."))
                 }
             }
+            .onChange(of: profilePicker) { item in saveImage(item, key: "faxelProfilePhotoPath") }
+            .onChange(of: backgroundPicker) { item in saveImage(item, key: "faxelPlayerPhotoPath") }
             .navigationTitle(L("Réglages"))
             .onAppear {
                 DispatchQueue.global(qos: .utility).async {
@@ -335,6 +412,24 @@ struct SettingsView: View {
             } message: {
                 Text(L("La bibliothèque et les playlists actuelles seront remplacées par celles de la sauvegarde."))
             }
+        }
+    }
+
+    private func saveImage(_ item: PhotosPickerItem?, key: String) {
+        guard let item else { return }
+        Task {
+            guard let data = try? await item.loadTransferable(type: Data.self),
+                  let image = UIImage(data: data),
+                  let jpeg = image.jpegData(compressionQuality: 0.9) else { return }
+            let url = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+                .appendingPathComponent("\(key).jpg")
+            do {
+                try jpeg.write(to: url, options: .atomic)
+                await MainActor.run {
+                    UserDefaults.standard.set(url.path, forKey: key)
+                    if key == "faxelPlayerPhotoPath" { playerBackground = "photo" }
+                }
+            } catch { }
         }
     }
 }

@@ -10,6 +10,9 @@ struct PlayerBackground: View {
     let track: Track?
     let meter: SpectrumMeter
     var style = "artwork"
+    @AppStorage("faxelPlayerPhotoPath") private var photoPath = ""
+    @AppStorage("faxelDimPlayerBackground") private var dimBackground = true
+    @AppStorage("faxelAnimations") private var animations = true
 
     var body: some View {
         let colors = artworkColors(track?.id ?? "faxel")
@@ -17,8 +20,12 @@ struct PlayerBackground: View {
             switch style {
             case "black":
                 Color.black
+            case "photo":
+                if !photoPath.isEmpty, FileManager.default.fileExists(atPath: photoPath) {
+                    LocalImage(url: URL(fileURLWithPath: photoPath)).scaledToFill().blur(radius: 35).clipped()
+                } else { LinearGradient(colors: colors, startPoint: .topLeading, endPoint: .bottomTrailing) }
             case "rainbow":
-                TimelineView(.animation(minimumInterval: 1.0 / 20)) { context in
+                TimelineView(.animation(minimumInterval: 1.0 / 20, paused: !animations)) { context in
                     let angle = context.date.timeIntervalSinceReferenceDate * 12
                     AngularGradient(colors: [.red, .orange, .yellow, .green, .blue, .purple, .pink, .red],
                                     center: .center, angle: .degrees(angle))
@@ -39,8 +46,8 @@ struct PlayerBackground: View {
                     .clipped()
                     .opacity(0.9)
             }
-            if style != "black" {
-            TimelineView(.animation(minimumInterval: 1.0 / 15)) { context in
+            if style != "black" && style != "photo" && animations {
+            TimelineView(.animation(minimumInterval: 1.0 / 15, paused: !animations)) { context in
                 let time = context.date.timeIntervalSinceReferenceDate
                 Canvas { canvas, size in
                     let blobs: [(Color, Double, Double, Double)] = [
@@ -63,8 +70,8 @@ struct PlayerBackground: View {
                 }
             }
             }
-            BassGlow(meter: meter, color: colors.first ?? .brand)
-            LinearGradient(colors: [.black.opacity(0.15), .black.opacity(0.55)], startPoint: .top, endPoint: .bottom)
+            if animations { BassGlow(meter: meter, color: colors.first ?? .brand) }
+            LinearGradient(colors: [.black.opacity(dimBackground ? 0.25 : 0.03), .black.opacity(dimBackground ? 0.72 : 0.12)], startPoint: .top, endPoint: .bottom)
         }
     }
 }
@@ -93,6 +100,7 @@ private struct BassGlow: View {
 
 /// Pochette du lecteur : carré, rond, vinyle qui tourne ou néon — elle bat avec les basses.
 struct PlayerCoverView: View {
+    @AppStorage("faxelAnimations") private var animations = true
     @ObservedObject var meter: SpectrumMeter
     let track: Track
     let style: String
@@ -100,7 +108,7 @@ struct PlayerCoverView: View {
     let size: CGFloat
 
     private var pulse: CGFloat {
-        playing ? 1 + CGFloat(meter.bass) * 0.05 : 0.9
+        animations ? (playing ? 1 + CGFloat(meter.bass) * 0.05 : 0.9) : 1
     }
 
     var body: some View {
@@ -138,14 +146,14 @@ struct PlayerCoverView: View {
                         .clipped()
                         .mask(LinearGradient(colors: [.white.opacity(0.35), .clear], startPoint: .top, endPoint: .bottom))
                 }
-                .offset(y: playing ? -CGFloat(meter.bass) * 10 : 0)
+                .offset(y: animations && playing ? -CGFloat(meter.bass) * 10 : 0)
             case "round":
                 ZStack {
                     Circle()
                         .stroke(LinearGradient(colors: colors, startPoint: .top, endPoint: .bottom), lineWidth: 4)
                         .frame(width: size * 0.92, height: size * 0.92)
-                        .scaleEffect(1 + CGFloat(meter.bass) * 0.12)
-                        .opacity(0.4 + Double(meter.bass) * 0.6)
+                        .scaleEffect(animations ? 1 + CGFloat(meter.bass) * 0.12 : 1)
+                        .opacity(animations ? 0.4 + Double(meter.bass) * 0.6 : 0.65)
                     TrackArtwork(track: track, width: size * 0.82, height: size * 0.82, radius: size)
                         .clipShape(Circle())
                         .shadow(color: .black.opacity(0.4), radius: 20, y: 10)
@@ -158,8 +166,8 @@ struct PlayerCoverView: View {
                             .stroke(LinearGradient(colors: colors, startPoint: .topLeading, endPoint: .bottomTrailing),
                                     lineWidth: 3)
                     )
-                    .shadow(color: (colors.first ?? .brand).opacity(0.5 + Double(meter.bass) * 0.5),
-                            radius: 18 + CGFloat(meter.bass) * 30)
+                    .shadow(color: (colors.first ?? .brand).opacity(animations ? 0.5 + Double(meter.bass) * 0.5 : 0.5),
+                            radius: animations ? 18 + CGFloat(meter.bass) * 30 : 18)
                     .shadow(color: (colors.last ?? .brand).opacity(0.4), radius: 40)
                     .scaleEffect(pulse)
             default:
@@ -175,7 +183,7 @@ struct PlayerCoverView: View {
 
     /// CD irisé qui tourne : reflets arc-en-ciel, pochette au centre.
     private var cd: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: !playing)) { context in
+        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: !playing || !animations)) { context in
             let angle = context.date.timeIntervalSinceReferenceDate * 70
             ZStack {
                 Circle()
@@ -192,15 +200,15 @@ struct PlayerCoverView: View {
                     .overlay(Circle().stroke(Color.white.opacity(0.6), lineWidth: 2))
             }
             .frame(width: size * 0.92, height: size * 0.92)
-            .rotationEffect(.degrees(angle.truncatingRemainder(dividingBy: 360)))
+            .rotationEffect(.degrees(animations ? angle.truncatingRemainder(dividingBy: 360) : 0))
             .shadow(color: .black.opacity(0.45), radius: 20, y: 10)
-            .scaleEffect(playing ? 1 + CGFloat(meter.bass) * 0.02 : 0.92)
+            .scaleEffect(animations ? (playing ? 1 + CGFloat(meter.bass) * 0.02 : 0.92) : 1)
         }
     }
 
     /// Cassette : étiquette avec la pochette et le titre, bobines qui tournent.
     private var cassette: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: !playing)) { context in
+        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: !playing || !animations)) { context in
             let angle = context.date.timeIntervalSinceReferenceDate * 120
             VStack(spacing: size * 0.05) {
                 HStack(spacing: 10) {
@@ -214,8 +222,8 @@ struct PlayerCoverView: View {
                 .padding(8)
                 .background(RoundedRectangle(cornerRadius: 6).fill(Color(white: 0.93)))
                 HStack(spacing: size * 0.22) {
-                    reel(angle)
-                    reel(angle * 0.8)
+                    reel(animations ? angle : 0)
+                    reel(animations ? angle * 0.8 : 0)
                 }
                 .padding(.horizontal, 18)
                 .padding(.vertical, 8)
@@ -247,7 +255,7 @@ struct PlayerCoverView: View {
 
     /// Disque vinyle : sillons, étiquette avec la pochette, il tourne pendant la lecture.
     private var vinyl: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: !playing)) { context in
+        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: !playing || !animations)) { context in
             let angle = context.date.timeIntervalSinceReferenceDate * 40
             ZStack {
                 Circle()
@@ -270,9 +278,9 @@ struct PlayerCoverView: View {
                     .frame(width: size * 0.035, height: size * 0.035)
             }
             .frame(width: size * 0.95, height: size * 0.95)
-            .rotationEffect(.degrees(angle.truncatingRemainder(dividingBy: 360)))
+            .rotationEffect(.degrees(animations ? angle.truncatingRemainder(dividingBy: 360) : 0))
             .shadow(color: .black.opacity(0.5), radius: 20, y: 10)
-            .scaleEffect(playing ? 1 + CGFloat(meter.bass) * 0.02 : 0.92)
+            .scaleEffect(animations ? (playing ? 1 + CGFloat(meter.bass) * 0.02 : 0.92) : 1)
         }
     }
 }

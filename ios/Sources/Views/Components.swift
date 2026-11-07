@@ -3,7 +3,14 @@ import SwiftUI
 
 extension Color {
     /// Couleur d'accent de Faxel (violet #8B5CF6).
-    static let brand = Color(red: 139.0 / 255.0, green: 92.0 / 255.0, blue: 246.0 / 255.0)
+    static var brand: Color { hex(UserDefaults.standard.string(forKey: "faxelAccentHex") ?? "8B5CF6") }
+    static func hex(_ value: String) -> Color {
+        let raw = value.trimmingCharacters(in: CharacterSet(charactersIn: "#"))
+        guard let number = UInt64(raw, radix: 16) else { return Color(red: 139.0 / 255.0, green: 92.0 / 255.0, blue: 246.0 / 255.0) }
+        return Color(red: Double((number >> 16) & 0xff) / 255,
+                     green: Double((number >> 8) & 0xff) / 255,
+                     blue: Double(number & 0xff) / 255)
+    }
     static let brandPink = Color(red: 236.0 / 255.0, green: 72.0 / 255.0, blue: 153.0 / 255.0)
 }
 

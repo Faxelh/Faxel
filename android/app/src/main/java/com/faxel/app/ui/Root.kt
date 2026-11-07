@@ -24,8 +24,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Download
+import androidx.compose.material.icons.rounded.AccountCircle
+import androidx.compose.material.icons.rounded.Groups
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Language
+import androidx.compose.material.icons.rounded.Notifications
+import androidx.compose.material.icons.rounded.SmartDisplay
+import androidx.compose.material.icons.rounded.Storefront
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Settings
@@ -73,6 +78,7 @@ import com.faxel.app.engine.Storage
 import com.faxel.app.playback.AudioConnection
 import com.faxel.app.playback.VideoState
 import java.io.File
+import coil.compose.AsyncImage
 
 enum class Tab(val icon: ImageVector, val label: Int) {
     Home(Icons.Rounded.Home, R.string.tab_home),
@@ -183,18 +189,19 @@ fun FaxelRoot() {
                 containerColor = Color(0xFF0B0B0F),
                 contentWindowInsets = WindowInsets(0, 0, 0, 0),
                 bottomBar = {
-                    Column(Modifier.background(Surface1)) {
+                    Column(Modifier.fillMaxWidth().navigationBarsPadding()) {
                         if (AudioConnection.current != null) MiniPlayer(onOpen = { audioOpen = true })
-                        NavigationBar(containerColor = Surface1, tonalElevation = 0.dp) {
-                            Tab.entries.forEach { item ->
-                                NavigationBarItem(
-                                    selected = tab == item,
-                                    onClick = { tab = item; searchOpen = false },
-                                    icon = { TabIcon(item) },
-                                    label = { Text(stringResource(item.label), fontSize = 11.sp, maxLines = 1) },
-                                    colors = NavigationBarItemDefaults.colors(indicatorColor = accent.copy(alpha = 0.25f)),
-                                )
-                            }
+                        Row(
+                            Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 8.dp)
+                                .clip(RoundedCornerShape(50)).background(Surface1).padding(4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            DockIcon(Icons.Rounded.Home, tab == Tab.Home, stringResource(R.string.tab_home), Modifier.weight(1f)) { tab = Tab.Home; searchOpen = false }
+                            DockIcon(Icons.Rounded.SmartDisplay, tab == Tab.Library, stringResource(R.string.tab_library), Modifier.weight(1f)) { tab = Tab.Library; searchOpen = false }
+                            DockIcon(Icons.Rounded.Storefront, tab == Tab.Download, stringResource(R.string.tab_download), Modifier.weight(1f), Engine.jobs.count { it.active }) { tab = Tab.Download; searchOpen = false }
+                            DockIcon(Icons.Rounded.Groups, tab == Tab.Browser, stringResource(R.string.tab_browser), Modifier.weight(1f)) { tab = Tab.Browser; searchOpen = false }
+                            DockIcon(Icons.Rounded.Notifications, false, stringResource(R.string.tab_download), Modifier.weight(1f), Engine.jobs.count { it.failed }) { tab = Tab.Download; searchOpen = false }
+                            DockIcon(Icons.Rounded.AccountCircle, tab == Tab.Settings, stringResource(R.string.tab_settings), Modifier.weight(1f), photo = Prefs.profilePhoto.value) { tab = Tab.Settings; searchOpen = false }
                         }
                     }
                 },
@@ -227,6 +234,22 @@ private fun TabIcon(item: Tab) {
         BadgedBox(badge = { Badge { Text("$running") } }) { Icon(item.icon, null) }
     } else {
         Icon(item.icon, null)
+    }
+}
+
+@Composable
+private fun DockIcon(icon: ImageVector, selected: Boolean, label: String, modifier: Modifier,
+                     badge: Int = 0, photo: String = "", onClick: () -> Unit) {
+    Box(modifier.padding(2.dp).fillMaxWidth().height(52.dp).clip(RoundedCornerShape(50))
+        .background(if (selected) Color.White.copy(alpha = 0.12f) else Color.Transparent)
+        .clickable(onClick = onClick), contentAlignment = Alignment.Center) {
+        if (photo.isNotBlank()) AsyncImage(photo, label, contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+            modifier = Modifier.size(30.dp).clip(androidx.compose.foundation.shape.CircleShape))
+        else Icon(icon, label, tint = Color.White, modifier = Modifier.size(27.dp))
+        if (badge > 0) {
+            Text(if (badge > 99) "99+" else "$badge", color = Color.White, fontSize = 10.sp,
+                modifier = Modifier.align(Alignment.TopEnd).clip(RoundedCornerShape(50)).background(Color(0xFFE9233C)).padding(horizontal = 5.dp, vertical = 2.dp))
+        }
     }
 }
 

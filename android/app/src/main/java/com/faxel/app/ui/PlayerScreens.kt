@@ -1,10 +1,21 @@
 package com.faxel.app.ui
 
 import android.app.Activity
+import android.Manifest
+import android.content.pm.PackageManager
 import android.content.pm.ActivityInfo
 import android.os.Build
 import android.view.View
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.border
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -24,6 +35,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
@@ -40,6 +52,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.ui.text.style.TextAlign
 import com.faxel.app.playback.AudioFx
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PictureInPictureAlt
 import androidx.compose.material.icons.rounded.PlayArrow
@@ -68,8 +81,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
@@ -79,6 +98,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.ContextCompat
+import com.faxel.app.data.Prefs
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -114,18 +135,112 @@ private fun rememberAudioPosition(): Pair<Long, Long> {
 }
 
 @Composable
+private fun PlayerArtwork(entry: com.faxel.app.data.Entry, size: androidx.compose.ui.unit.Dp, modifier: Modifier = Modifier) {
+    val style = Prefs.playerCover.value
+    val animated = Prefs.playerAnimations.value && AudioConnection.isPlaying
+    val spin = rememberInfiniteTransition(label = "cover-spin")
+    val rotation by spin.animateFloat(
+        initialValue = 0f, targetValue = if (animated) 360f else 0f,
+        animationSpec = infiniteRepeatable(tween(7000, easing = LinearEasing)), label = "cover-rotation",
+    )
+    when (style) {
+        "vinyl" -> Box(modifier.size(size).clip(CircleShape).background(Color(0xFF17171A)), contentAlignment = Alignment.Center) {
+            Box(Modifier.fillMaxSize().padding(size * 0.1f).rotate(if (animated) rotation else 0f)
+                .clip(CircleShape).background(Surface2), contentAlignment = Alignment.Center) {
+                if (entry.thumbnail != null) AsyncImage(entry.thumbnail, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().padding(size * 0.16f).clip(CircleShape))
+                else Thumb(null, entry.path, modifier = Modifier.fillMaxSize().padding(size * 0.16f).clip(CircleShape), shape = CircleShape, audio = true)
+                Box(Modifier.size(size * 0.12f).clip(CircleShape).background(Color(0xFF101014)).border(2.dp, Color.White.copy(alpha = 0.45f), CircleShape))
+            }
+            Canvas(Modifier.fillMaxSize()) {
+                drawCircle(Color.White.copy(alpha = 0.12f), style = Stroke(width = 1.dp.toPx()))
+                drawCircle(Color.White.copy(alpha = 0.08f), radius = this.size.minDimension * 0.42f, style = Stroke(width = 1.dp.toPx()))
+            }
+        }
+        "cassette" -> Column(modifier.size(size).clip(RoundedCornerShape(20.dp)).background(Color(0xFF28272D))
+            .border(1.dp, Color.White.copy(alpha = 0.18f), RoundedCornerShape(20.dp)).padding(size * 0.09f),
+            verticalArrangement = Arrangement.SpaceBetween, horizontalAlignment = Alignment.CenterHorizontally) {
+            Box(Modifier.fillMaxWidth().weight(1f).clip(RoundedCornerShape(9.dp)).background(Surface1), contentAlignment = Alignment.Center) {
+                if (entry.thumbnail != null) AsyncImage(entry.thumbnail, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                else Icon(Icons.Rounded.MusicNote, null, tint = accent, modifier = Modifier.size(size * 0.25f))
+            }
+            Row(Modifier.fillMaxWidth().padding(top = size * 0.06f), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
+                repeat(2) {
+                    Box(Modifier.size(size * 0.17f).rotate(if (animated) rotation else 0f).clip(CircleShape)
+                        .background(Color(0xFF15151B)).border(3.dp, Color.White.copy(alpha = 0.65f), CircleShape), contentAlignment = Alignment.Center) {
+                        Box(Modifier.size(size * 0.045f).clip(CircleShape).background(accent))
+                    }
+                }
+                Canvas(Modifier.width(size * 0.34f).height(size * 0.12f)) {
+                    drawRoundRect(Color(0xFF45424B), cornerRadius = androidx.compose.ui.geometry.CornerRadius(size.width * 0.04f))
+                }
+            }
+        }
+        else -> Thumb(entry.thumbnail, entry.path, size, shape = RoundedCornerShape(18.dp), audio = true, modifier = modifier)
+    }
+}
+
+@Composable
+private fun PlayerVisualizer(modifier: Modifier = Modifier) {
+    val style = Prefs.visualizerStyle.value
+    if (style == "none") return
+    val spectrum = AudioFx.spectrum
+    Canvas(modifier) {
+        val count = 26
+        val gap = 3.dp.toPx()
+        val width = (size.width - gap * (count - 1)) / count
+        for (i in 0 until count) {
+            val value = spectrum.getOrElse(i) { 0f }.coerceIn(0f, 1f)
+            val amplitude = (0.12f + value * 0.88f) * size.height
+            val height = if (style == "wave") amplitude.coerceAtLeast(size.height * (0.18f + 0.62f * kotlin.math.abs(kotlin.math.sin(i * 0.34f)))) else amplitude
+            val top = if (style == "wave") (size.height - height) / 2 else size.height - height
+            drawRoundRect(
+                color = accent.copy(alpha = 0.65f + value * 0.35f),
+                topLeft = Offset(i * (width + gap), top),
+                size = Size(width, height.coerceAtLeast(3.dp.toPx())),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(width / 2, width / 2),
+            )
+        }
+    }
+}
+
+@Composable
 fun AudioScreen(onClose: () -> Unit) {
     val entry = AudioConnection.current ?: return
     val (position, duration) = rememberAudioPosition()
-    Box(
-        Modifier.fillMaxSize().background(Color.Black).pointerInput(Unit) { detectTapGestures { } },
-    ) {
-        // Fond : la miniature floutée (Android 12+) sur un dégradé.
-        Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(gradientFor(entry.path)[0].copy(alpha = 0.6f), Color.Black))))
-        if (Build.VERSION.SDK_INT >= 31 && entry.thumbnail != null) {
-            AsyncImage(entry.thumbnail, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().blur(60.dp))
-            Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.5f)))
+    val context = LocalContext.current
+    val visualizerPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { allowed ->
+        Prefs.visualizerPermissionAsked.value = true
+        if (allowed && Prefs.visualizerStyle.value != "none") AudioFx.startVisualizer()
+    }
+    LaunchedEffect(Prefs.visualizerStyle.value, entry.path) {
+        if (Prefs.visualizerStyle.value == "none") {
+            AudioFx.stopVisualizer()
+        } else if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+            AudioFx.startVisualizer()
+        } else if (!Prefs.visualizerPermissionAsked.value) {
+            visualizerPermission.launch(Manifest.permission.RECORD_AUDIO)
         }
+    }
+    DisposableEffect(Unit) { onDispose { AudioFx.stopVisualizer() } }
+    val backgroundStyle = Prefs.playerBackground.value
+    val backgroundImage = when (backgroundStyle) {
+        "photo" -> Prefs.playerBackgroundPhoto.value.takeIf { it.isNotBlank() }
+        "artwork" -> entry.thumbnail
+        else -> null
+    }
+    Box(
+        Modifier.fillMaxSize().background(
+            when (backgroundStyle) {
+                "black", "photo", "artwork" -> Color.Black
+                else -> Brush.linearGradient(gradientFor(entry.path))
+            },
+        ).pointerInput(Unit) { detectTapGestures { } },
+    ) {
+        if (backgroundImage != null) {
+            AsyncImage(backgroundImage, null, contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize().then(if (Build.VERSION.SDK_INT >= 31) Modifier.blur(60.dp) else Modifier))
+        }
+        if (Prefs.dimPlayerBackground.value) Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.56f)))
         BoxWithConstraints(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
             val boxW = maxWidth
             val boxH = maxHeight
@@ -134,8 +249,8 @@ fun AudioScreen(onClose: () -> Unit) {
                 Row(Modifier.fillMaxSize().padding(16.dp), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
                     Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.Center) {
                         Header(onClose)
-                        Thumb(entry.thumbnail, entry.path, minOf(boxH * 0.5f, 360.dp), shape = RoundedCornerShape(18.dp), audio = true,
-                            modifier = Modifier.align(Alignment.CenterHorizontally))
+                        PlayerArtwork(entry, minOf(boxH * 0.5f, 360.dp), Modifier.align(Alignment.CenterHorizontally))
+                        PlayerVisualizer(Modifier.fillMaxWidth().height(28.dp).padding(horizontal = 24.dp))
                         Spacer(Modifier.height(12.dp))
                         Controls(position, duration)
                     }
@@ -145,7 +260,11 @@ fun AudioScreen(onClose: () -> Unit) {
                 Column(Modifier.fillMaxSize().padding(horizontal = 22.dp)) {
                     Header(onClose)
                     Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        Thumb(entry.thumbnail, entry.path, minOf(boxW - 44.dp, boxH * 0.45f), shape = RoundedCornerShape(18.dp), audio = true)
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            PlayerArtwork(entry, minOf(boxW - 44.dp, boxH * 0.4f))
+                            Spacer(Modifier.height(14.dp))
+                            PlayerVisualizer(Modifier.width(minOf(boxW - 72.dp, 320.dp)).height(32.dp))
+                        }
                     }
                     Controls(position, duration)
                     Spacer(Modifier.height(12.dp))

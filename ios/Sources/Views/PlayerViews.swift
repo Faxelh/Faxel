@@ -66,7 +66,7 @@ struct NowPlayingView: View {
     @EnvironmentObject var model: AppModel
     @ObservedObject private var library = MediaLibrary.shared
     @Environment(\.dismiss) private var dismiss
-    @AppStorage("faxelCoverStyle") private var coverStyle = "square"
+    @AppStorage("faxelCoverStyle") private var coverStyle = "cassette"
     @AppStorage("faxelVisualizer") private var visualizer = "bars"
     @AppStorage("faxelBackground") private var backgroundStyle = "artwork"
     @State private var showQueue = false
