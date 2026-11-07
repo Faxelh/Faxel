@@ -63,6 +63,7 @@ struct RootView: View {
     @EnvironmentObject var browser: BrowserModel
     @EnvironmentObject var jobStore: JobStore
     @State private var showQueue = false
+    @Namespace private var dockSelection
     @AppStorage("faxelProfilePhotoPath") private var profilePhotoPath = ""
 
     private var activeCount: Int {
@@ -146,6 +147,7 @@ struct RootView: View {
             DownloadView().opacity(model.tab == .download ? 1 : 0).allowsHitTesting(model.tab == .download)
             SettingsView().opacity(model.tab == .settings ? 1 : 0).allowsHitTesting(model.tab == .settings)
         }
+        .animation(.easeInOut(duration: 0.18), value: model.tab)
     }
 
     private var faxelDock: some View {
@@ -164,22 +166,25 @@ struct RootView: View {
         .padding(.top, 5)
         .padding(.bottom, 7)
         .background(LinearGradient(colors: [Color.clear, Color.black.opacity(0.35)], startPoint: .top, endPoint: .bottom))
+        .animation(.spring(response: 0.34, dampingFraction: 0.78), value: model.tab)
+        .animation(.spring(response: 0.34, dampingFraction: 0.78), value: showQueue)
+        .animation(.spring(response: 0.34, dampingFraction: 0.78), value: model.showBrowser)
     }
 
     private var homeDockButton: some View {
-        dockButton("house.fill", label: L("Accueil"), selected: model.tab == .home) { model.tab = .home }
+        dockButton("house.fill", label: L("Accueil"), selected: model.tab == .home && !model.showBrowser && !showQueue) { model.tab = .home }
     }
 
     private var libraryDockButton: some View {
-        dockButton("play.rectangle", label: L("Bibliothèque"), selected: model.tab == .library) { model.tab = .library }
+        dockButton("play.rectangle", label: L("Bibliothèque"), selected: model.tab == .library && !model.showBrowser && !showQueue) { model.tab = .library }
     }
 
     private var downloadDockButton: some View {
-        dockButton("storefront", label: L("Télécharger"), selected: model.tab == .download, badge: activeCount) { model.tab = .download }
+        dockButton("storefront", label: L("Télécharger"), selected: model.tab == .download && !model.showBrowser && !showQueue, badge: activeCount) { model.tab = .download }
     }
 
     private var browserDockButton: some View {
-        dockButton("globe", label: L("Navigateur"), selected: model.showBrowser) {
+        dockButton("globe", label: L("Navigateur"), selected: model.showBrowser && !showQueue) {
             withAnimation(.spring(response: 0.42, dampingFraction: 0.9)) { model.showBrowser = true }
         }
     }
@@ -198,7 +203,10 @@ struct RootView: View {
                     .frame(maxWidth: .infinity)
                     .frame(height: 52)
                     .background {
-                        if model.tab == .settings { Capsule().fill(Color.white.opacity(0.12)) }
+                        if model.tab == .settings && !model.showBrowser && !showQueue {
+                            Capsule().fill(Color.white.opacity(0.12))
+                                .matchedGeometryEffect(id: "faxelDockSelection", in: dockSelection)
+                        }
                     }
                     .contentShape(Rectangle())
             }
@@ -226,7 +234,10 @@ struct RootView: View {
                 .frame(maxWidth: .infinity)
                 .frame(height: 52)
                 .background {
-                    if selected { Capsule().fill(Color.white.opacity(0.12)) }
+                    if selected {
+                        Capsule().fill(Color.white.opacity(0.12))
+                            .matchedGeometryEffect(id: "faxelDockSelection", in: dockSelection)
+                    }
                 }
                 .overlay(alignment: .topTrailing) {
                     if badge > 0 {

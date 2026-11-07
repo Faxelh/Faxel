@@ -2,6 +2,7 @@ package com.faxel.app.ui
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
@@ -18,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -62,6 +64,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.graphicsLayer
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -192,17 +195,32 @@ fun FaxelRoot() {
                 bottomBar = {
                     Column(Modifier.fillMaxWidth().navigationBarsPadding()) {
                         if (AudioConnection.current != null) MiniPlayer(onOpen = { audioOpen = true })
-                        Row(
+                        val selectedDockIndex = when {
+                            tab == Tab.Browser -> 5
+                            tab == Tab.Settings -> 4
+                            else -> when (tab) {
+                                Tab.Home -> 0
+                                Tab.Library -> 1
+                                Tab.Download -> 2
+                                else -> 0
+                            }
+                        }
+                        BoxWithConstraints(
                             Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 8.dp)
-                                .clip(RoundedCornerShape(50)).background(Surface1).padding(4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
+                                .clip(RoundedCornerShape(50)).background(Surface1).padding(4.dp).height(52.dp),
                         ) {
-                            DockIcon(Icons.Rounded.Home, tab == Tab.Home, stringResource(R.string.tab_home), Modifier.weight(1f)) { tab = Tab.Home; searchOpen = false }
-                            DockIcon(Icons.Rounded.SmartDisplay, tab == Tab.Library, stringResource(R.string.tab_library), Modifier.weight(1f)) { tab = Tab.Library; searchOpen = false }
-                            DockIcon(Icons.Rounded.Storefront, tab == Tab.Download, stringResource(R.string.tab_download), Modifier.weight(1f), Engine.jobs.count { it.active }) { tab = Tab.Download; searchOpen = false }
-                            DockIcon(Icons.Rounded.Notifications, false, stringResource(R.string.tab_download), Modifier.weight(1f), Engine.jobs.count { it.failed }) { tab = Tab.Download; searchOpen = false }
-                            DockIcon(Icons.Rounded.AccountCircle, tab == Tab.Settings, stringResource(R.string.tab_settings), Modifier.weight(1f), photo = Prefs.profilePhoto.value) { tab = Tab.Settings; searchOpen = false }
-                            DockIcon(Icons.Rounded.Language, tab == Tab.Browser, stringResource(R.string.tab_browser), Modifier.weight(1f)) { tab = Tab.Browser; searchOpen = false }
+                            val itemWidth = maxWidth / 6f
+                            val indicatorX by animateDpAsState(itemWidth * selectedDockIndex.toFloat() + 2.dp, label = "dockSelection")
+                            Box(Modifier.align(Alignment.CenterStart).offset(x = indicatorX).width(itemWidth - 4.dp).height(48.dp)
+                                .clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = 0.12f)))
+                            Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
+                                DockIcon(Icons.Rounded.Home, tab == Tab.Home, stringResource(R.string.tab_home), Modifier.weight(1f)) { tab = Tab.Home; searchOpen = false }
+                                DockIcon(Icons.Rounded.SmartDisplay, tab == Tab.Library, stringResource(R.string.tab_library), Modifier.weight(1f)) { tab = Tab.Library; searchOpen = false }
+                                DockIcon(Icons.Rounded.Storefront, tab == Tab.Download, stringResource(R.string.tab_download), Modifier.weight(1f), Engine.jobs.count { it.active }) { tab = Tab.Download; searchOpen = false }
+                                DockIcon(Icons.Rounded.Notifications, false, stringResource(R.string.tab_download), Modifier.weight(1f), Engine.jobs.count { it.failed }) { tab = Tab.Download; searchOpen = false }
+                                DockIcon(Icons.Rounded.AccountCircle, tab == Tab.Settings, stringResource(R.string.tab_settings), Modifier.weight(1f), photo = Prefs.profilePhoto.value) { tab = Tab.Settings; searchOpen = false }
+                                DockIcon(Icons.Rounded.Language, tab == Tab.Browser, stringResource(R.string.tab_browser), Modifier.weight(1f)) { tab = Tab.Browser; searchOpen = false }
+                            }
                         }
                     }
                 },
@@ -243,11 +261,13 @@ private fun TabIcon(item: Tab) {
 private fun DockIcon(icon: ImageVector, selected: Boolean, label: String, modifier: Modifier,
                      badge: Int = 0, photo: String = "", onClick: () -> Unit) {
     Box(modifier.padding(2.dp).fillMaxWidth().height(52.dp).clip(RoundedCornerShape(50))
-        .background(if (selected) Color.White.copy(alpha = 0.12f) else Color.Transparent)
         .clickable(onClick = onClick), contentAlignment = Alignment.Center) {
         if (photo.isNotBlank()) AsyncImage(photo, label, contentScale = androidx.compose.ui.layout.ContentScale.Crop,
             modifier = Modifier.size(30.dp).clip(androidx.compose.foundation.shape.CircleShape))
-        else Icon(icon, label, tint = Color.White, modifier = Modifier.size(27.dp))
+        else Icon(icon, label, tint = Color.White, modifier = Modifier.size(if (selected) 28.dp else 27.dp).graphicsLayer {
+            val scale = if (selected) 1.04f else 1f
+            scaleX = scale; scaleY = scale
+        })
         if (badge > 0) {
             Text(if (badge > 99) "99+" else "$badge", color = Color.White, fontSize = 10.sp,
                 modifier = Modifier.align(Alignment.TopEnd).clip(RoundedCornerShape(50)).background(Color(0xFFE9233C)).padding(horizontal = 5.dp, vertical = 2.dp))

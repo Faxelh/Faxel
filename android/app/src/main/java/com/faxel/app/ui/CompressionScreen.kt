@@ -21,6 +21,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -142,7 +144,7 @@ fun CompressionScreen(onClose: () -> Unit) {
         }
     }
 
-    Column(Modifier.fillMaxSize().background(Color(0xFF0B0B0F))) {
+    Column(Modifier.fillMaxSize().background(Color(0xFF0B0B0F)).statusBarsPadding().navigationBarsPadding()) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = { if (!running) onClose() }, enabled = !running) { Icon(Icons.Rounded.ArrowBack, null, tint = Color.White) }
             Text(stringResource(R.string.home_compress), color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
@@ -170,6 +172,28 @@ fun CompressionScreen(onClose: () -> Unit) {
             }
             Text(if (sourceTab == 0) "Votre vidéo sélectionnée" else "Choisissez une vidéo", color = Muted, fontSize = 15.sp, fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp))
+            val picked = selected?.takeIf { sourceTab == 1 || photoSource }
+            if (picked != null) {
+                Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Taille estimée : ${formatSize((sourceSize * quality.estimate).toDouble())}", color = Muted, fontSize = 13.sp)
+                    if (running) {
+                        LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth(), color = accent)
+                        Text("Compression… ${(progress * 100).toInt()} %", color = Muted, fontSize = 12.sp)
+                    } else {
+                        Button(onClick = {
+                            savedToGallery = false
+                            gallerySaveAttempted = false
+                            startCompression(context, picked, quality,
+                                onStart = { job, file -> transformer = job; activeOutput = file; output = null; error = null; running = true },
+                                onDone = { file -> output = file; outputSize = file.length(); activeOutput = null; if (!photoSource) Engine.rescan(); running = false; transformer = null },
+                                reportError = { message -> activeOutput?.delete(); activeOutput = null; error = message; running = false; transformer = null })
+                        }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = accent)) {
+                            Icon(Icons.Rounded.VideoLibrary, null); Spacer(Modifier.size(8.dp)); Text("Compresser")
+                        }
+                    }
+                    error?.let { Text(it, color = Color(0xFFFF6B6B), fontSize = 13.sp) }
+                }
+            }
             if (videos.isEmpty()) {
                 if (sourceTab == 1) EmptyState(stringResource(R.string.no_videos), stringResource(R.string.no_videos_hint))
                 else Text("Aucune vidéo sélectionnée.", color = Muted, modifier = Modifier.padding(16.dp))
@@ -190,22 +214,6 @@ fun CompressionScreen(onClose: () -> Unit) {
                             }
                             if (entry.path == selected?.path) Icon(Icons.Rounded.CheckCircle, null, tint = accent, modifier = Modifier.size(22.dp))
                         }
-                    }
-                }
-                val picked = selected
-                if (picked != null) {
-                    Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("Taille estimée : ${formatSize((sourceSize * quality.estimate).toDouble())}", color = Muted, fontSize = 13.sp)
-                        if (running) {
-                            LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth(), color = accent)
-                            Text("Compression… ${(progress * 100).toInt()} %", color = Muted, fontSize = 12.sp)
-                        } else {
-                            Button(onClick = { savedToGallery = false; gallerySaveAttempted = false; startCompression(context, picked, quality, onStart = { job, file -> transformer = job; activeOutput = file; output = null; error = null; running = true }, onDone = { file -> output = file; outputSize = file.length(); activeOutput = null; if (!photoSource) Engine.rescan(); running = false; transformer = null }, reportError = { message -> activeOutput?.delete(); activeOutput = null; error = message; running = false; transformer = null }) },
-                                modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = accent)) {
-                                Icon(Icons.Rounded.VideoLibrary, null); Spacer(Modifier.size(8.dp)); Text("Compresser")
-                            }
-                        }
-                        error?.let { Text(it, color = Color(0xFFFF6B6B), fontSize = 13.sp) }
                     }
                 }
             }
