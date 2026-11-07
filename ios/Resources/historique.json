@@ -1,155 +1,177 @@
 [
- {
-  "date": "2026-10-15T17:30:00Z",
-  "titre": "Sélection multiple",
-  "items": [
-   {
-    "texte": "Bibliothèque : bouton Sélectionner (ou appui long) pour choisir une ou plusieurs vidéos, sons ou photos"
-   },
-   {
-    "texte": "Tout sélectionner, puis exporter vers la galerie, enregistrer dans un dossier (Fichiers), partager ou supprimer d'un coup"
-   }
-  ]
- },
- {
-  "date": "2026-10-15T16:40:00Z",
-  "titre": "Volume du lecteur vidéo",
-  "items": [
-   {
-    "texte": "Le geste vertical à droite règle maintenant vraiment le volume du téléphone",
-    "plateforme": "ios"
-   }
-  ]
- },
- {
-  "date": "2026-10-15T13:30:00Z",
-  "titre": "Téléchargement depuis le navigateur",
-  "items": [
-   {
-    "texte": "« Voulez-vous télécharger ce contenu ? » › Oui : la vidéo part directement dans la file de téléchargement, vous restez dans le navigateur pour continuer à défiler et en ajouter d'autres"
-   },
-   {
-    "texte": "Bouton de téléchargement du navigateur : toucher = ajouter à la file, appui long = choisir la qualité",
-    "plateforme": "android"
-   }
-  ]
- },
- {
-  "date": "2026-10-15T13:05:00Z",
-  "titre": "Nouveautés visibles",
-  "items": [
-   {
-    "texte": "Historique des nouveautés dans Réglages, et liste des correctifs affichée à chaque mise à jour"
-   },
-   {
-    "texte": "Numéro de version automatique : Année.Mois.N (ex. 2026.10.3 = 3e mise à jour d'octobre 2026)"
-   }
-  ]
- },
- {
-  "date": "2026-10-15T12:30:00Z",
-  "titre": "Nom de l'application et écran allumé",
-  "items": [
-   {
-    "texte": "Le nom de l'application se change dans Réglages › Nom de l'application, et il est proposé après chaque mise à jour"
-   },
-   {
-    "texte": "Icône à votre nom sur l'écran d'accueil (profil à installer depuis Réglages)",
-    "plateforme": "ios"
-   },
-   {
-    "texte": "Icône à votre nom ajoutée sur l'écran d'accueil",
-    "plateforme": "android"
-   },
-   {
-    "texte": "« Épisode suivant dans… » décompte maintenant 5, 4, 3, 2, 1 en vraies secondes"
-   },
-   {
-    "texte": "L'écran ne se met plus en veille pendant une vidéo ou un reel, dans l'app comme dans le navigateur"
-   }
-  ]
- },
- {
-  "date": "2026-10-14T12:00:00Z",
-  "titre": "Lecteurs et filigranes",
-  "items": [
-   {
-    "texte": "Lecteur vidéo : luminosité (glisser à gauche) et volume (glisser à droite)"
-   },
-   {
-    "texte": "Lecteur vidéo : appui long pour vitesse ×2, glisser pour avancer/reculer, carte « épisode suivant »"
-   },
-   {
-    "texte": "Lecteur vidéo : répéter, minuterie, capture d'écran"
-   },
-   {
-    "texte": "Retirer un filigrane : floutez une ou plusieurs zones de la vidéo"
-   },
-   {
-    "texte": "Les formats sans filigrane sont choisis en priorité au téléchargement"
-   },
-   {
-    "texte": "TikTok retiré du navigateur"
-   },
-   {
-    "texte": "Optimisation générale : app plus fluide et plus rapide"
-   }
-  ]
- },
- {
-  "date": "2026-10-13T12:00:00Z",
-  "titre": "Lecture corrigée",
-  "items": [
-   {
-    "texte": "Plus de retour au début après une pause",
-    "plateforme": "ios"
-   },
-   {
-    "texte": "Plus de saut de morceau quand iOS coupe le son",
-    "plateforme": "ios"
-   },
-   {
-    "texte": "Plus de ralentissement entre pause et lecture",
-    "plateforme": "ios"
-   },
-   {
-    "texte": "Navigateur adapté aux tablettes",
-    "plateforme": "android"
-   }
-  ]
- },
- {
-  "date": "2026-10-11T12:00:00Z",
-  "titre": "Mises à jour intégrées",
-  "items": [
-   {
-    "texte": "Un seul dépôt pour iPhone et Android"
-   },
-   {
-    "texte": "L'app vérifie les nouvelles versions et propose la mise à jour"
-   },
-   {
-    "texte": "Mise à jour avec SideStore / AltStore ou IPA pour Sideloadly",
-    "plateforme": "ios"
-   },
-   {
-    "texte": "Téléchargement et installation de l'APK depuis l'app",
-    "plateforme": "android"
-   }
-  ]
- },
- {
-  "date": "2026-10-10T12:00:00Z",
-  "titre": "Faxel sur Android",
-  "items": [
-   {
-    "texte": "Première version Android : téléchargements, lecteurs, navigateur, bibliothèque",
-    "plateforme": "android"
-   },
-   {
-    "texte": "Compatible téléphones et tablettes",
-    "plateforme": "android"
-   }
-  ]
- }
+  {
+    "date": "2026-11-07T15:00:00Z",
+    "titre": "Lecteur musical et navigation unifiés",
+    "items": [
+      {
+        "texte": "Barre de navigation en capsule avec six icônes, badges et photo de profil",
+        "plateforme": "ios"
+      },
+      {
+        "texte": "Barre de navigation en capsule avec six icônes, badges et photo de profil",
+        "plateforme": "android"
+      },
+      {
+        "texte": "Lecteur musical personnalisable : couleur, photo de profil, fond photo, pochettes cassette/vinyle, visualiseur et animations",
+        "plateforme": "ios"
+      },
+      {
+        "texte": "Réglages du lecteur musical alignés sur iPhone : fond personnalisé, pochettes, visualiseur, animations et assombrissement du fond",
+        "plateforme": "android"
+      }
+    ]
+  },
+  {
+    "date": "2026-10-15T17:30:00Z",
+    "titre": "Sélection multiple",
+    "items": [
+      {
+        "texte": "Bibliothèque : bouton Sélectionner (ou appui long) pour choisir une ou plusieurs vidéos, sons ou photos"
+      },
+      {
+        "texte": "Tout sélectionner, puis exporter vers la galerie, enregistrer dans un dossier (Fichiers), partager ou supprimer d'un coup"
+      }
+    ]
+  },
+  {
+    "date": "2026-10-15T16:40:00Z",
+    "titre": "Volume du lecteur vidéo",
+    "items": [
+      {
+        "texte": "Le geste vertical à droite règle maintenant vraiment le volume du téléphone",
+        "plateforme": "ios"
+      }
+    ]
+  },
+  {
+    "date": "2026-10-15T13:30:00Z",
+    "titre": "Téléchargement depuis le navigateur",
+    "items": [
+      {
+        "texte": "« Voulez-vous télécharger ce contenu ? » › Oui : la vidéo part directement dans la file de téléchargement, vous restez dans le navigateur pour continuer à défiler et en ajouter d'autres"
+      },
+      {
+        "texte": "Bouton de téléchargement du navigateur : toucher = ajouter à la file, appui long = choisir la qualité",
+        "plateforme": "android"
+      }
+    ]
+  },
+  {
+    "date": "2026-10-15T13:05:00Z",
+    "titre": "Nouveautés visibles",
+    "items": [
+      {
+        "texte": "Historique des nouveautés dans Réglages, et liste des correctifs affichée à chaque mise à jour"
+      },
+      {
+        "texte": "Numéro de version automatique : Année.Mois.N (ex. 2026.10.3 = 3e mise à jour d'octobre 2026)"
+      }
+    ]
+  },
+  {
+    "date": "2026-10-15T12:30:00Z",
+    "titre": "Nom de l'application et écran allumé",
+    "items": [
+      {
+        "texte": "Le nom de l'application se change dans Réglages › Nom de l'application, et il est proposé après chaque mise à jour"
+      },
+      {
+        "texte": "Icône à votre nom sur l'écran d'accueil (profil à installer depuis Réglages)",
+        "plateforme": "ios"
+      },
+      {
+        "texte": "Icône à votre nom ajoutée sur l'écran d'accueil",
+        "plateforme": "android"
+      },
+      {
+        "texte": "« Épisode suivant dans… » décompte maintenant 5, 4, 3, 2, 1 en vraies secondes"
+      },
+      {
+        "texte": "L'écran ne se met plus en veille pendant une vidéo ou un reel, dans l'app comme dans le navigateur"
+      }
+    ]
+  },
+  {
+    "date": "2026-10-14T12:00:00Z",
+    "titre": "Lecteurs et filigranes",
+    "items": [
+      {
+        "texte": "Lecteur vidéo : luminosité (glisser à gauche) et volume (glisser à droite)"
+      },
+      {
+        "texte": "Lecteur vidéo : appui long pour vitesse ×2, glisser pour avancer/reculer, carte « épisode suivant »"
+      },
+      {
+        "texte": "Lecteur vidéo : répéter, minuterie, capture d'écran"
+      },
+      {
+        "texte": "Retirer un filigrane : floutez une ou plusieurs zones de la vidéo"
+      },
+      {
+        "texte": "Les formats sans filigrane sont choisis en priorité au téléchargement"
+      },
+      {
+        "texte": "TikTok retiré du navigateur"
+      },
+      {
+        "texte": "Optimisation générale : app plus fluide et plus rapide"
+      }
+    ]
+  },
+  {
+    "date": "2026-10-13T12:00:00Z",
+    "titre": "Lecture corrigée",
+    "items": [
+      {
+        "texte": "Plus de retour au début après une pause",
+        "plateforme": "ios"
+      },
+      {
+        "texte": "Plus de saut de morceau quand iOS coupe le son",
+        "plateforme": "ios"
+      },
+      {
+        "texte": "Plus de ralentissement entre pause et lecture",
+        "plateforme": "ios"
+      },
+      {
+        "texte": "Navigateur adapté aux tablettes",
+        "plateforme": "android"
+      }
+    ]
+  },
+  {
+    "date": "2026-10-11T12:00:00Z",
+    "titre": "Mises à jour intégrées",
+    "items": [
+      {
+        "texte": "Un seul dépôt pour iPhone et Android"
+      },
+      {
+        "texte": "L'app vérifie les nouvelles versions et propose la mise à jour"
+      },
+      {
+        "texte": "Mise à jour avec SideStore / AltStore ou IPA pour Sideloadly",
+        "plateforme": "ios"
+      },
+      {
+        "texte": "Téléchargement et installation de l'APK depuis l'app",
+        "plateforme": "android"
+      }
+    ]
+  },
+  {
+    "date": "2026-10-10T12:00:00Z",
+    "titre": "Faxel sur Android",
+    "items": [
+      {
+        "texte": "Première version Android : téléchargements, lecteurs, navigateur, bibliothèque",
+        "plateforme": "android"
+      },
+      {
+        "texte": "Compatible téléphones et tablettes",
+        "plateforme": "android"
+      }
+    ]
+  }
 ]

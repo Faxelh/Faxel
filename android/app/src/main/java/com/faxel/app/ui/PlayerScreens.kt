@@ -171,7 +171,7 @@ private fun PlayerArtwork(entry: com.faxel.app.data.Entry, size: androidx.compos
                     }
                 }
                 Canvas(Modifier.width(size * 0.34f).height(size * 0.12f)) {
-                    drawRoundRect(Color(0xFF45424B), cornerRadius = androidx.compose.ui.geometry.CornerRadius(size.width * 0.04f))
+                    drawRoundRect(Color(0xFF45424B), cornerRadius = androidx.compose.ui.geometry.CornerRadius(this.size.width * 0.04f))
                 }
             }
         }
@@ -228,14 +228,15 @@ fun AudioScreen(onClose: () -> Unit) {
         "artwork" -> entry.thumbnail
         else -> null
     }
+    val backgroundBrush = if (backgroundStyle == "black" || backgroundStyle == "photo" || backgroundStyle == "artwork") {
+        null
+    } else {
+        Brush.linearGradient(gradientFor(entry.path))
+    }
     Box(
-        Modifier.fillMaxSize().background(
-            when (backgroundStyle) {
-                "black", "photo", "artwork" -> Color.Black
-                else -> Brush.linearGradient(gradientFor(entry.path))
-            },
-        ).pointerInput(Unit) { detectTapGestures { } },
+        Modifier.fillMaxSize().background(Color.Black).pointerInput(Unit) { detectTapGestures { } },
     ) {
+        if (backgroundBrush != null) Box(Modifier.fillMaxSize().background(backgroundBrush))
         if (backgroundImage != null) {
             AsyncImage(backgroundImage, null, contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize().then(if (Build.VERSION.SDK_INT >= 31) Modifier.blur(60.dp) else Modifier))

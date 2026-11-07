@@ -33,9 +33,6 @@ struct VideoPlayerView: View {
     @State private var pinchHandled = false
     @State private var importingSubtitle = false
     @State private var noticeText: String?
-    @State private var subtitleMenuPresented = false
-    @State private var moreMenuPresented = false
-    @State private var speedMenuPresented = false
     @State private var generatingSubtitles = false
 
     private static let speeds: [Float] = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]
@@ -137,9 +134,6 @@ struct VideoPlayerView: View {
         .onChange(of: video.isPlaying) { playing in
             if playing { scheduleHide() } else { showControls(autoHide: false) }
         }
-        .onChange(of: subtitleMenuPresented) { presented in menuVisibilityChanged(presented) }
-        .onChange(of: moreMenuPresented) { presented in menuVisibilityChanged(presented) }
-        .onChange(of: speedMenuPresented) { presented in menuVisibilityChanged(presented) }
         .onChange(of: video.index) { _ in
             autoRotate()
         }
@@ -251,11 +245,6 @@ struct VideoPlayerView: View {
         }
         hideWork = work
         DispatchQueue.main.asyncAfter(deadline: .now() + 3.5, execute: work)
-    }
-
-    private func menuVisibilityChanged(_ presented: Bool) {
-        if presented { hideWork?.cancel() }
-        else { scheduleHide() }
     }
 
     private func generateSubtitles() {
@@ -614,7 +603,7 @@ struct VideoPlayerView: View {
     }
 
     private var subtitleMenu: some View {
-        Menu(isPresented: $subtitleMenuPresented) {
+        Menu {
             Button {
                 video.subtitlesOff()
             } label: {
@@ -710,10 +699,11 @@ struct VideoPlayerView: View {
                 .font(.system(size: 18, weight: .semibold))
                 .frame(width: 40, height: 40)
         }
+        .simultaneousGesture(TapGesture().onEnded { hideWork?.cancel() })
     }
 
     private var moreMenu: some View {
-        Menu(isPresented: $moreMenuPresented) {
+        Menu {
             Menu {
                 ForEach(VideoPlayerView.speeds, id: \.self) { value in
                     Button {
@@ -819,6 +809,7 @@ struct VideoPlayerView: View {
                 .font(.system(size: 19, weight: .semibold))
                 .frame(width: 40, height: 40)
         }
+        .simultaneousGesture(TapGesture().onEnded { hideWork?.cancel() })
     }
 
     private func centerButtons(landscape: Bool) -> some View {
@@ -912,7 +903,7 @@ struct VideoPlayerView: View {
                     scheduleHide()
                 }
                 Spacer()
-                Menu(isPresented: $speedMenuPresented) {
+                Menu {
                     ForEach(VideoPlayerView.speeds, id: \.self) { value in
                         Button {
                             video.setRate(value)
@@ -927,6 +918,7 @@ struct VideoPlayerView: View {
                 } label: {
                     barLabel("speedometer", speedText(video.rate), active: video.rate != 1)
                 }
+                .simultaneousGesture(TapGesture().onEnded { hideWork?.cancel() })
                 Spacer()
                 barButton("lock", L("Écran")) {
                     touchLocked = true

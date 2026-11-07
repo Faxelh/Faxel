@@ -63,6 +63,7 @@ struct RootView: View {
     @EnvironmentObject var browser: BrowserModel
     @EnvironmentObject var jobStore: JobStore
     @State private var showQueue = false
+    @AppStorage("faxelProfilePhotoPath") private var profilePhotoPath = ""
 
     private var activeCount: Int {
         jobStore.jobs.filter { $0.active }.count
@@ -174,23 +175,49 @@ struct RootView: View {
 
     private var faxelDock: some View {
         HStack(spacing: 3) {
-            dockButton("house.fill", label: L("Accueil"), selected: model.tab == .home) { model.tab = .home }
-            dockButton("play.rectangle", label: L("Bibliothèque"), selected: model.tab == .library) { model.tab = .library }
-            dockButton("storefront", label: L("Télécharger"), selected: model.tab == .download, badge: activeCount) { model.tab = .download }
-            dockButton("person.3", label: L("Navigateur"), selected: model.showBrowser) {
-                withAnimation(.spring(response: 0.42, dampingFraction: 0.9)) { model.showBrowser = true }
-            }
-            dockButton("bell", label: L("Téléchargements"), selected: showQueue, badge: failedCount) { showQueue = true }
+            homeDockButton
+            libraryDockButton
+            downloadDockButton
+            browserDockButton
+            queueDockButton
+            profileDockButton
+        }
+        .padding(7)
+        .background(Color(red: 0.12, green: 0.12, blue: 0.13), in: Capsule())
+        .overlay(Capsule().stroke(Color.white.opacity(0.13), lineWidth: 1))
+        .padding(.horizontal, 18)
+        .padding(.top, 5)
+        .padding(.bottom, 7)
+        .background(LinearGradient(colors: [Color.clear, Color.black.opacity(0.35)], startPoint: .top, endPoint: .bottom))
+    }
+
+    private var homeDockButton: some View {
+        dockButton("house.fill", label: L("Accueil"), selected: model.tab == .home) { model.tab = .home }
+    }
+
+    private var libraryDockButton: some View {
+        dockButton("play.rectangle", label: L("Bibliothèque"), selected: model.tab == .library) { model.tab = .library }
+    }
+
+    private var downloadDockButton: some View {
+        dockButton("storefront", label: L("Télécharger"), selected: model.tab == .download, badge: activeCount) { model.tab = .download }
+    }
+
+    private var browserDockButton: some View {
+        dockButton("person.3", label: L("Navigateur"), selected: model.showBrowser) {
+            withAnimation(.spring(response: 0.42, dampingFraction: 0.9)) { model.showBrowser = true }
+        }
+    }
+
+    private var queueDockButton: some View {
+        dockButton("bell", label: L("Téléchargements"), selected: showQueue, badge: failedCount) { showQueue = true }
+    }
+
+    private var profileDockButton: some View {
             Button {
                 model.tab = .settings
             } label: {
-                Group {
-                    if !profilePhotoPath.isEmpty, let profileImage = UIImage(contentsOfFile: profilePhotoPath) {
-                        Image(uiImage: profileImage).resizable().scaledToFill()
-                    } else {
-                        Image("Logo").resizable().scaledToFill()
-                    }
-                }
+                profileAvatar
                     .frame(width: 34, height: 34).clipShape(Circle())
                     .overlay(Circle().stroke(Color.white.opacity(0.9), lineWidth: 1.5))
                     .frame(maxWidth: .infinity)
@@ -202,14 +229,15 @@ struct RootView: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel(L("Réglages"))
+    }
+
+    @ViewBuilder
+    private var profileAvatar: some View {
+        if !profilePhotoPath.isEmpty, let image = UIImage(contentsOfFile: profilePhotoPath) {
+            Image(uiImage: image).resizable().scaledToFill()
+        } else {
+            Image("Logo").resizable().scaledToFill()
         }
-        .padding(7)
-        .background(Color(red: 0.12, green: 0.12, blue: 0.13), in: Capsule())
-        .overlay(Capsule().stroke(Color.white.opacity(0.13), lineWidth: 1))
-        .padding(.horizontal, 18)
-        .padding(.top, 5)
-        .padding(.bottom, 7)
-        .background(LinearGradient(colors: [Color.clear, Color.black.opacity(0.35)], startPoint: .top, endPoint: .bottom))
     }
 
     private func dockButton(_ icon: String, label: String, selected: Bool, badge: Int = 0,
