@@ -180,7 +180,7 @@
     <string name="appname_hint">Display name</string>
     <string name="appname_save">Save</string>
     <string name="appname_home">Add to home screen</string>
-    <string name="appname_home_info">Android doesn't allow replacing the native app icon. Choose an image, then pin the Faxel shortcut to your home screen.</string>
+    <string name="appname_home_info">Choose an image, then pin the Faxel shortcut to your home screen.</string>
     <string name="appname_unsupported">Your home screen doesn\'t allow adding this icon. The name is used inside the app.</string>
     <string name="appname_done">Name saved</string>
     <string name="appname_updated_title">Update installed</string>
