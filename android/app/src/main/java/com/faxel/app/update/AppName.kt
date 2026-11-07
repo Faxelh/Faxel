@@ -2,14 +2,21 @@ package com.faxel.app.update
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedTextField
@@ -23,6 +30,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -32,6 +41,8 @@ import androidx.core.content.pm.ShortcutInfoCompat
 import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.graphics.drawable.IconCompat
 import com.faxel.app.R
+import java.io.File
+import kotlin.math.min
 
 /**
  * Nom de l'application choisi par l'utilisateur. Android ne laisse pas une app renommer
@@ -53,6 +64,26 @@ object AppName {
         prefs(context).edit().putString("name", if (clean == default(context)) "" else clean).apply()
     }
 
+    fun customIcon(context: Context): Bitmap? = prefs(context).getString("icon_path", null)
+        ?.let { path -> BitmapFactory.decodeFile(path) }
+
+    fun setCustomIcon(context: Context, uri: android.net.Uri?): Boolean {
+        if (uri == null) {
+            prefs(context).edit().remove("icon_path").apply()
+            return true
+        }
+        return try {
+            val source = context.contentResolver.openInputStream(uri)?.use { stream -> BitmapFactory.decodeStream(stream) } ?: return false
+            val side = min(source.width, source.height)
+            val square = Bitmap.createBitmap(source, (source.width - side) / 2, (source.height - side) / 2, side, side)
+            val scaled = Bitmap.createScaledBitmap(square, 512, 512, true)
+            val file = File(context.filesDir, "faxel-home-icon.png")
+            file.outputStream().use { scaled.compress(Bitmap.CompressFormat.PNG, 100, it) }
+            prefs(context).edit().putString("icon_path", file.absolutePath).apply()
+            true
+        } catch (_: Exception) { false }
+    }
+
     /** Pose (ou renomme) l'icône « nom » sur l'écran d'accueil. Faux si le lanceur ne le permet pas. */
     fun pinShortcut(context: Context, name: String, request: Boolean = true): Boolean {
         val launch = context.packageManager.getLaunchIntentForPackage(context.packageName)
@@ -62,7 +93,8 @@ object AppName {
         val info = ShortcutInfoCompat.Builder(context, SHORTCUT_ID)
             .setShortLabel(label)
             .setLongLabel(label)
-            .setIcon(IconCompat.createWithResource(context, R.mipmap.ic_launcher))
+            .setIcon(customIcon(context)?.let { IconCompat.createWithBitmap(it) }
+                ?: IconCompat.createWithResource(context, R.mipmap.ic_launcher))
             .setIntent(launch)
             .build()
         val pinned = try {
@@ -128,11 +160,24 @@ fun AppNameAfterUpdate() {
 fun AppNameDialog(onDismiss: () -> Unit) {
     val context = LocalContext.current
     var name by remember { mutableStateOf(AppName.get(context)) }
+    var iconVersion by remember { mutableStateOf(0) }
+    val iconPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        if (AppName.setCustomIcon(context, uri)) {
+            iconVersion++
+            AppName.pinShortcut(context, AppName.get(context), request = false)
+        }
+    }
+    val customIcon = remember(iconVersion) { AppName.customIcon(context) }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.appname_title)) },
         text = {
             Column {
+                customIcon?.let {
+                    Image(it.asImageBitmap(), contentDescription = null,
+                        modifier = Modifier.size(72.dp).clip(RoundedCornerShape(18.dp)).align(Alignment.CenterHorizontally))
+                    Spacer(Modifier.height(8.dp))
+                }
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it.take(30) },
@@ -141,6 +186,14 @@ fun AppNameDialog(onDismiss: () -> Unit) {
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Spacer(Modifier.height(10.dp))
+                TextButton(onClick = { iconPicker.launch("image/*") }) { Text(stringResource(R.string.appname_pick_icon)) }
+                if (customIcon != null) {
+                    TextButton(onClick = {
+                        AppName.setCustomIcon(context, null)
+                        iconVersion++
+                        AppName.pinShortcut(context, AppName.get(context), request = false)
+                    }) { Text(stringResource(R.string.appname_reset_icon)) }
+                }
                 Text(stringResource(R.string.appname_home_info), color = Color.Gray, fontSize = 13.sp)
                 Spacer(Modifier.height(10.dp))
                 Button(

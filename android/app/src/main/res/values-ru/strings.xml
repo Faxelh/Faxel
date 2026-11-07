@@ -174,7 +174,9 @@
     <string name="videos">Видео</string>
     <string name="whole_playlist">Скачать весь плейлист</string>
     <string name="yes">Да</string>
-    <string name="appname_title">Название приложения</string>
+    <string name="appname_title">Название и значок приложения</string>
+    <string name="appname_pick_icon">Выбрать значок главного экрана</string>
+    <string name="appname_reset_icon">Восстановить значок Faxel</string>
     <string name="appname_hint">Отображаемое имя</string>
     <string name="appname_save">Сохранить</string>
     <string name="appname_home">Добавить на главный экран</string>

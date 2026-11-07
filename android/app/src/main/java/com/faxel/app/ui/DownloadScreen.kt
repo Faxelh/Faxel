@@ -156,11 +156,11 @@ fun DownloadScreen(onSearch: () -> Unit) {
 
     if (Layout.wide) {
         Row(Modifier.fillMaxSize()) {
-            LazyColumn(Modifier.weight(1f).fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp), content = top)
-            LazyColumn(Modifier.weight(1f).fillMaxSize(), contentPadding = PaddingValues(top = 60.dp, bottom = 24.dp), content = jobs)
+            LazyColumn(Modifier.weight(1f).fillMaxSize(), contentPadding = PaddingValues(bottom = 40.dp), content = top)
+            LazyColumn(Modifier.weight(1f).fillMaxSize(), contentPadding = PaddingValues(top = 60.dp, bottom = 40.dp), content = jobs)
         }
     } else {
-        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
+        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 48.dp)) {
             top()
             jobs()
         }

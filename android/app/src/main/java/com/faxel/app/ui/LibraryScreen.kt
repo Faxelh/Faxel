@@ -203,7 +203,7 @@ fun LibraryScreen(onOpenAudio: () -> Unit) {
     LazyVerticalGrid(
         gridCells,
         Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = 12.dp, end = 12.dp, bottom = if (selection.active) 150.dp else 24.dp),
+        contentPadding = PaddingValues(start = 12.dp, end = 12.dp, bottom = if (selection.active) 150.dp else 48.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {

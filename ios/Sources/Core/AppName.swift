@@ -1,4 +1,5 @@
 import Network
+import PhotosUI
 import SwiftUI
 import UIKit
 
@@ -8,6 +9,7 @@ import UIKit
 /// On enregistre donc le nom (affiché dans l'app) et on peut créer sur l'écran d'accueil
 /// une icône à ce nom : un petit profil « raccourci » qui ouvre l'app, installé depuis Réglages.
 enum AppName {
+    private static let iconDataKey = "appName.homeIconData"
     static var defaultName: String { Updater.appName }
     /// Adresse qui ouvre l'app (déclarée dans project.yml).
     static var urlScheme: String { Updater.appName == "Faxel" ? "faxel" : "faxelmusic" }
@@ -21,6 +23,15 @@ enum AppName {
     static func set(_ name: String) {
         let clean = String(name.trimmingCharacters(in: .whitespacesAndNewlines).prefix(30))
         UserDefaults.standard.set(clean == defaultName ? "" : clean, forKey: "appName.custom")
+    }
+
+    static var customIcon: UIImage? {
+        guard let data = UserDefaults.standard.data(forKey: iconDataKey) else { return nil }
+        return UIImage(data: data)
+    }
+
+    static func setCustomIcon(_ imageData: Data?) {
+        UserDefaults.standard.set(imageData, forKey: iconDataKey)
     }
 
     /// Au premier lancement d'une nouvelle version : le numéro de la version d'avant (sinon nil).
@@ -59,7 +70,7 @@ enum AppName {
             "Precomposed": true,
             "URL": urlScheme + "://",
         ]
-        if let png = icon?.pngData() { clip["Icon"] = png }
+        if let png = (customIcon ?? icon)?.pngData() { clip["Icon"] = png }
         let root: [String: Any] = [
             "PayloadContent": [clip],
             "PayloadDescription": L("Icône « {name} » sur l'écran d'accueil.", ["name": name]),
@@ -169,6 +180,8 @@ struct AppNameView: View {
     @State private var saved = false
     @State private var opening = false
     @State private var failed = false
+    @State private var iconPicker: PhotosPickerItem?
+    @State private var customIcon = AppName.customIcon
     /// Ouvert après une mise à jour (dans une feuille) : bouton « OK ».
     var inSheet = false
 
@@ -182,7 +195,7 @@ struct AppNameView: View {
             Section {
                 VStack(spacing: 8) {
                     Group {
-                        if let icon = AppName.icon {
+                        if let icon = customIcon ?? AppName.icon {
                             Image(uiImage: icon).resizable()
                         } else {
                             RoundedRectangle(cornerRadius: 16).fill(Color.accentColor)
@@ -202,6 +215,15 @@ struct AppNameView: View {
                     .submitLabel(.done)
                     .onSubmit(save)
                 Button(L("Enregistrer"), action: save)
+                PhotosPicker(selection: $iconPicker, matching: .images) {
+                    Label(L("Choisir l'icône"), systemImage: "photo")
+                }
+                if customIcon != nil {
+                    Button(L("Rétablir l'icône Faxel"), role: .destructive) {
+                        customIcon = nil
+                        AppName.setCustomIcon(nil)
+                    }
+                }
                 if clean != AppName.defaultName {
                     Button(L("Nom d'origine")) {
                         name = AppName.defaultName
@@ -242,11 +264,30 @@ struct AppNameView: View {
                 Text(L("Sur l'écran d'accueil"))
             } footer: {
                 Text(failed ? L("Impossible d'ouvrir Safari. Réessayez.")
-                     : L("iOS ne permet pas à une app de renommer elle-même son icône : cette icône à votre nom ouvre l'app. Pour changer de nom plus tard, recommencez ici."))
+                     : L("iOS ne permet pas de remplacer l'icône native. Choisissez une image puis créez un raccourci personnalisé sur l'écran d'accueil."))
             }
         }
-        .navigationTitle(L("Nom de l'application"))
+        .navigationTitle(L("Nom et icône de l'application"))
         .navigationBarTitleDisplayMode(.inline)
+        .onChange(of: iconPicker) { item in
+            guard let item else { return }
+            Task {
+                guard let data = try? await item.loadTransferable(type: Data.self),
+                      let image = UIImage(data: data) else { return }
+                let canvas = CGSize(width: 512, height: 512)
+                let scale = max(canvas.width / image.size.width, canvas.height / image.size.height)
+                let drawSize = CGSize(width: image.size.width * scale, height: image.size.height * scale)
+                let drawRect = CGRect(x: (canvas.width - drawSize.width) / 2,
+                                      y: (canvas.height - drawSize.height) / 2,
+                                      width: drawSize.width, height: drawSize.height)
+                let iconImage = UIGraphicsImageRenderer(size: canvas).image { _ in image.draw(in: drawRect) }
+                guard let png = iconImage.pngData() else { return }
+                await MainActor.run {
+                    customIcon = iconImage
+                    AppName.setCustomIcon(png)
+                }
+            }
+        }
         .toolbar {
             if inSheet {
                 ToolbarItem(placement: .confirmationAction) {

@@ -64,7 +64,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.graphicsLayer
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -207,12 +207,12 @@ fun FaxelRoot() {
                             }
                         }
                         BoxWithConstraints(
-                            Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 8.dp)
-                                .clip(RoundedCornerShape(50)).background(Surface1).padding(4.dp).height(52.dp),
+                            Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 5.dp)
+                                .clip(RoundedCornerShape(50)).background(Surface1).padding(3.dp).height(44.dp),
                         ) {
                             val itemWidth = maxWidth / 6f
                             val indicatorX by animateDpAsState(itemWidth * selectedDockIndex.toFloat() + 2.dp, label = "dockSelection")
-                            Box(Modifier.align(Alignment.CenterStart).offset(x = indicatorX).width(itemWidth - 4.dp).height(48.dp)
+                            Box(Modifier.align(Alignment.CenterStart).offset(x = indicatorX).width(itemWidth - 3.dp).height(40.dp)
                                 .clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = 0.12f)))
                             Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
                                 DockIcon(Icons.Rounded.Home, tab == Tab.Home && !compressionOpen, stringResource(R.string.tab_home), Modifier.weight(1f)) { compressionOpen = false; tab = Tab.Home; searchOpen = false }
@@ -261,11 +261,11 @@ private fun TabIcon(item: Tab) {
 @Composable
 private fun DockIcon(icon: ImageVector, selected: Boolean, label: String, modifier: Modifier,
                      badge: Int = 0, photo: String = "", onClick: () -> Unit) {
-    Box(modifier.padding(2.dp).fillMaxWidth().height(52.dp).clip(RoundedCornerShape(50))
+    Box(modifier.padding(2.dp).fillMaxWidth().height(44.dp).clip(RoundedCornerShape(50))
         .clickable(onClick = onClick), contentAlignment = Alignment.Center) {
         if (photo.isNotBlank()) AsyncImage(photo, label, contentScale = androidx.compose.ui.layout.ContentScale.Crop,
             modifier = Modifier.size(30.dp).clip(androidx.compose.foundation.shape.CircleShape))
-        else Icon(icon, label, tint = Color.White, modifier = Modifier.size(if (selected) 28.dp else 27.dp).graphicsLayer {
+        else Icon(icon, label, tint = Color.White, modifier = Modifier.size(if (selected) 25.dp else 24.dp).graphicsLayer {
             val scale = if (selected) 1.04f else 1f
             scaleX = scale; scaleY = scale
         })

@@ -347,7 +347,7 @@ struct SettingsView: View {
                     NavigationLink {
                         AppNameView()
                     } label: {
-                        SettingsLabel(title: L("Nom de l'application"), icon: "character.cursor.ibeam", color: .purple)
+                        SettingsLabel(title: L("Nom et icône de l'application"), icon: "app.badge", color: .purple)
                     }
                     NavigationLink {
                         UpdatesView()

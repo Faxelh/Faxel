@@ -174,7 +174,9 @@
     <string name="videos">Videos</string>
     <string name="whole_playlist">Ganze Playlist herunterladen</string>
     <string name="yes">Ja</string>
-    <string name="appname_title">App-Name</string>
+    <string name="appname_title">App-Name und Symbol</string>
+    <string name="appname_pick_icon">Startbildschirm-Symbol wählen</string>
+    <string name="appname_reset_icon">Faxel-Symbol wiederherstellen</string>
     <string name="appname_hint">Angezeigter Name</string>
     <string name="appname_save">Speichern</string>
     <string name="appname_home">Zum Startbildschirm hinzufügen</string>

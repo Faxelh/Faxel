@@ -163,12 +163,12 @@ struct RootView: View {
             profileDockButton
             browserDockButton
         }
-        .padding(7)
+        .padding(5)
         .background(Color(red: 0.12, green: 0.12, blue: 0.13), in: Capsule())
         .overlay(Capsule().stroke(Color.white.opacity(0.13), lineWidth: 1))
         .padding(.horizontal, 18)
-        .padding(.top, 5)
-        .padding(.bottom, 7)
+        .padding(.top, 4)
+        .padding(.bottom, 4)
         .background(LinearGradient(colors: [Color.clear, Color.black.opacity(0.35)], startPoint: .top, endPoint: .bottom))
         .animation(.spring(response: 0.34, dampingFraction: 0.78), value: model.tab)
         .animation(.spring(response: 0.34, dampingFraction: 0.78), value: showCompression)
@@ -206,10 +206,10 @@ struct RootView: View {
                 model.tab = .settings
             } label: {
                 profileAvatar
-                    .frame(width: 34, height: 34).clipShape(Circle())
+                    .frame(width: 30, height: 30).clipShape(Circle())
                     .overlay(Circle().stroke(Color.white.opacity(0.9), lineWidth: 1.5))
                     .frame(maxWidth: .infinity)
-                    .frame(height: 52)
+                    .frame(height: 44)
                     .background {
                         if model.tab == .settings && !model.showBrowser && !showQueue && !showCompression {
                             Capsule().fill(Color.white.opacity(0.12))
@@ -237,10 +237,10 @@ struct RootView: View {
             action()
         } label: {
             Image(systemName: icon)
-                .font(.system(size: 25, weight: selected ? .semibold : .regular))
+                .font(.system(size: 22, weight: selected ? .semibold : .regular))
                 .foregroundStyle(selected ? .white : Color.white.opacity(0.9))
                 .frame(maxWidth: .infinity)
-                .frame(height: 52)
+                .frame(height: 44)
                 .background {
                     if selected {
                         Capsule().fill(Color.white.opacity(0.12))

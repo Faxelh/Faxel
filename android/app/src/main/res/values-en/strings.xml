@@ -174,11 +174,13 @@
     <string name="videos">Videos</string>
     <string name="whole_playlist">Download the whole playlist</string>
     <string name="yes">Yes</string>
-    <string name="appname_title">App name</string>
+    <string name="appname_title">App name and icon</string>
+    <string name="appname_pick_icon">Choose home screen icon</string>
+    <string name="appname_reset_icon">Restore Faxel icon</string>
     <string name="appname_hint">Display name</string>
     <string name="appname_save">Save</string>
     <string name="appname_home">Add to home screen</string>
-    <string name="appname_home_info">Android doesn\'t let an installed app rename its own icon: an icon with this name is added to your home screen (it renames itself afterwards). You can remove the old icon.</string>
+    <string name="appname_home_info">Android doesn't allow replacing the native app icon. Choose an image, then pin the Faxel shortcut to your home screen.</string>
     <string name="appname_unsupported">Your home screen doesn\'t allow adding this icon. The name is used inside the app.</string>
     <string name="appname_done">Name saved</string>
     <string name="appname_updated_title">Update installed</string>

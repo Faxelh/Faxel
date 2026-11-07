@@ -135,6 +135,7 @@ struct DownloadView: View {
 
                     JobsSection(store: model.jobStore)
                 }
+                .padding(.bottom, 36)
             }
             .scrollDismissesKeyboard(.interactively)
             .background(DownloadAuroraBackground())

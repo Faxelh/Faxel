@@ -601,6 +601,7 @@ struct VideosView: View {
                     }
                 }
             }
+            .padding(.bottom, 40)
         }
         .navigationTitle(folder.isEmpty ? L("Vidéos") : folder)
         .searchable(text: $query, prompt: L("Rechercher dans les vidéos"))
