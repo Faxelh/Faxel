@@ -234,7 +234,7 @@ fun FaxelRoot() {
         SnackbarHost(
             hostState = snackbar,
             modifier = Modifier.align(Alignment.BottomCenter)
-                .padding(horizontal = 16.dp, bottom = if (wide) 24.dp else 88.dp),
+                .padding(start = 16.dp, end = 16.dp, bottom = if (wide) 24.dp else 88.dp),
         ) { data ->
             Snackbar(
                 snackbarData = data,
