@@ -21,6 +21,8 @@
     <string name="v_locked">Screen locked: tap the padlock to unlock</string>
     <string name="v_minutes">%1$d min</string>
     <string name="v_next_in">Next episode in %1$d s</string>
+    <string name="v_all_episodes">All episodes</string>
+    <string name="v_next_episode">Next episode</string>
     <string name="v_none">No track</string>
     <string name="v_pip">Mini</string>
     <string name="v_play">Play</string>

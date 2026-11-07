@@ -21,6 +21,8 @@
     <string name="v_locked">Écran verrouillé : touchez le cadenas pour déverrouiller</string>
     <string name="v_minutes">%1$d min</string>
     <string name="v_next_in">Épisode suivant dans %1$d s</string>
+    <string name="v_all_episodes">Tous les épisodes</string>
+    <string name="v_next_episode">Épisode suivant</string>
     <string name="v_none">Aucune piste</string>
     <string name="v_pip">Réduire</string>
     <string name="v_play">Lire</string>

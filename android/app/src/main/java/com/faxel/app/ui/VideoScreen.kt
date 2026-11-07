@@ -58,7 +58,6 @@ import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Replay10
 import androidx.compose.material.icons.rounded.ScreenRotation
 import androidx.compose.material.icons.rounded.SkipNext
-import androidx.compose.material.icons.rounded.SkipPrevious
 import androidx.compose.material.icons.rounded.VolumeOff
 import androidx.compose.material.icons.rounded.VolumeUp
 import androidx.compose.material3.CircularProgressIndicator
@@ -441,11 +440,6 @@ fun VideoScreen(onClose: () -> Unit) {
                                 color = Color.White.copy(alpha = 0.65f), fontSize = 12.sp)
                         }
                     }
-                    if (VideoState.files.size > 1) {
-                        IconButton(onClick = { menu = "episodes"; show() }) {
-                            Icon(Icons.Rounded.FormatListBulleted, "Épisodes", tint = Color.White)
-                        }
-                    }
                     Box {
                         IconButton(onClick = { menu = "subs"; show() }) { Icon(Icons.Rounded.ClosedCaption, null, tint = Color.White) }
                         TrackMenu(menu == "subs", C.TRACK_TYPE_TEXT, allowOff = true) { menu = null }
@@ -472,13 +466,12 @@ fun VideoScreen(onClose: () -> Unit) {
                     }
                 }
 
-                // Centre : précédent, -10 s, lecture, +10 s, suivant
+                // Centre : commandes de lecture, inspirées du lecteur de streaming fourni.
                 Row(
                     Modifier.align(Alignment.Center),
-                    horizontalArrangement = Arrangement.spacedBy(22.dp),
+                    horizontalArrangement = Arrangement.spacedBy(30.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    if (VideoState.files.size > 1) RoundButton(Icons.Rounded.SkipPrevious, 48) { VideoState.previous(); show() }
                     RoundButton(Icons.Rounded.Replay10, 52) { VideoState.seekBy(-10_000); show() }
                     Box(
                         Modifier.size(76.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.18f))
@@ -489,7 +482,6 @@ fun VideoScreen(onClose: () -> Unit) {
                             tint = Color.White, modifier = Modifier.size(46.dp))
                     }
                     RoundButton(Icons.Rounded.Forward10, 52) { VideoState.seekBy(10_000); show() }
-                    if (VideoState.files.size > 1) RoundButton(Icons.Rounded.SkipNext, 48) { VideoState.next(); show() }
                 }
 
                 // Bas : barre de progression et outils
@@ -536,6 +528,25 @@ fun VideoScreen(onClose: () -> Unit) {
                             ToolButton(Icons.Rounded.PictureInPictureAlt, stringResource(R.string.v_pip)) {
                                 (activity as? MainActivity)?.enterPip()
                             }
+                        }
+                    }
+                    if (VideoState.files.size > 1) {
+                        Row(
+                            Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 2.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            EpisodeAction(
+                                icon = Icons.Rounded.FormatListBulleted,
+                                label = stringResource(R.string.v_all_episodes),
+                                onClick = { menu = "episodes"; show() },
+                            )
+                            EpisodeAction(
+                                icon = Icons.Rounded.SkipNext,
+                                label = stringResource(R.string.v_next_episode),
+                                enabled = VideoState.hasNext,
+                                onClick = { VideoState.next(); show() },
+                            )
                         }
                     }
                 }
@@ -650,6 +661,27 @@ private fun ToolButton(icon: ImageVector?, label: String, onClick: () -> Unit) {
             Text(label, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp, modifier = Modifier.height(22.dp))
         }
         if (icon != null) Text(label, color = Color.White.copy(alpha = 0.8f), fontSize = 11.sp, maxLines = 1)
+    }
+}
+
+@Composable
+private fun EpisodeAction(icon: ImageVector, label: String, enabled: Boolean = true, onClick: () -> Unit) {
+    Row(
+        Modifier.clip(RoundedCornerShape(8.dp))
+            .clickable(enabled = enabled, onClick = onClick)
+            .padding(horizontal = 8.dp, vertical = 7.dp),
+        horizontalArrangement = Arrangement.spacedBy(7.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(icon, null, tint = Color.White.copy(alpha = if (enabled) 1f else 0.42f), modifier = Modifier.size(19.dp))
+        Text(
+            label.uppercase(),
+            color = Color.White.copy(alpha = if (enabled) 1f else 0.42f),
+            fontWeight = FontWeight.Bold,
+            fontSize = 11.sp,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 

@@ -21,6 +21,8 @@
     <string name="v_locked">Pantalla bloqueada: toca el candado para desbloquear</string>
     <string name="v_minutes">%1$d min</string>
     <string name="v_next_in">Siguiente episodio en %1$d s</string>
+    <string name="v_all_episodes">Todos los episodios</string>
+    <string name="v_next_episode">Siguiente episodio</string>
     <string name="v_none">Ninguna pista</string>
     <string name="v_pip">Mini</string>
     <string name="v_play">Reproducir</string>

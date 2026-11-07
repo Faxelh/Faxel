@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Download
+import androidx.compose.material.icons.rounded.AutoFixHigh
 import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Person
@@ -81,7 +82,7 @@ fun HomeScreen(onNavigate: (Tab) -> Unit, onSearch: () -> Unit, onCompression: (
         item { HomeAction(Icons.Rounded.VideoLibrary, stringResource(R.string.tab_library), stringResource(R.string.home_library_hint)) { onNavigate(Tab.Library) } }
         item { HomeAction(Icons.Rounded.Language, stringResource(R.string.tab_browser), stringResource(R.string.home_browser_hint)) { onNavigate(Tab.Browser) } }
         item { HomeAction(Icons.Rounded.Settings, stringResource(R.string.tab_settings), stringResource(R.string.home_settings_hint)) { onNavigate(Tab.Settings) } }
-        item { HomeAction(Icons.Rounded.VideoLibrary, stringResource(R.string.home_compress), stringResource(R.string.home_compress_hint), onCompression) }
+        item { HomeAction(Icons.Rounded.AutoFixHigh, stringResource(R.string.home_compress), stringResource(R.string.home_compress_hint), onCompression) }
     }
 }
 

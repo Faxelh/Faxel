@@ -52,6 +52,7 @@ import androidx.compose.material3.NavigationRailItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -230,7 +231,20 @@ fun FaxelRoot() {
             }
         }
 
-        SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).padding(bottom = if (wide) 24.dp else 140.dp))
+        SnackbarHost(
+            hostState = snackbar,
+            modifier = Modifier.align(Alignment.BottomCenter)
+                .padding(horizontal = 16.dp, bottom = if (wide) 24.dp else 88.dp),
+        ) { data ->
+            Snackbar(
+                snackbarData = data,
+                shape = RoundedCornerShape(18.dp),
+                containerColor = Surface2,
+                contentColor = Color.White,
+                actionColor = accent,
+                dismissActionContentColor = Muted,
+            )
+        }
 
         AnimatedVisibility(
             visible = audioOpen && AudioConnection.current != null,

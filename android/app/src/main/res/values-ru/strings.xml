@@ -21,6 +21,8 @@
     <string name="v_locked">Экран заблокирован: нажмите на замок</string>
     <string name="v_minutes">%1$d мин</string>
     <string name="v_next_in">Следующая серия через %1$d с</string>
+    <string name="v_all_episodes">Все серии</string>
+    <string name="v_next_episode">Следующая серия</string>
     <string name="v_none">Нет дорожек</string>
     <string name="v_pip">Мини</string>
     <string name="v_play">Смотреть</string>

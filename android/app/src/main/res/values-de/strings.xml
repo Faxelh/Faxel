@@ -21,6 +21,8 @@
     <string name="v_locked">Bildschirm gesperrt: Schloss antippen zum Entsperren</string>
     <string name="v_minutes">%1$d Min.</string>
     <string name="v_next_in">Nächste Folge in %1$d s</string>
+    <string name="v_all_episodes">Alle Folgen</string>
+    <string name="v_next_episode">Nächste Folge</string>
     <string name="v_none">Keine Spur</string>
     <string name="v_pip">Mini</string>
     <string name="v_play">Abspielen</string>
