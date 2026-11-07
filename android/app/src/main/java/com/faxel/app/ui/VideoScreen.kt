@@ -314,7 +314,7 @@ fun VideoScreen(onClose: () -> Unit) {
                                             hudLeft = level
                                         } else {
                                             videoVolume = level
-                                            VideoState.setVolumeLevel(level)
+                                            VideoState.applyVolumeLevelFromGesture(level)
                                             hudRight = level
                                         }
                                     }

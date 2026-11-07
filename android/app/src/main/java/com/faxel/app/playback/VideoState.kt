@@ -181,7 +181,7 @@ object VideoState {
     }
 
     /** Garder le curseur et le gain audio liés au vrai audio session du lecteur. */
-    fun setVolumeLevel(level: Float) {
+    fun applyVolumeLevelFromGesture(level: Float) {
         volumeLevel = level.coerceIn(0.25f, 2f)
         applyVolumeLevel()
     }
