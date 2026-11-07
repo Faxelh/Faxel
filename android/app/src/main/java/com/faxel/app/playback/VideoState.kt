@@ -1,6 +1,7 @@
 package com.faxel.app.playback
 
 import android.content.Context
+import android.media.audiofx.LoudnessEnhancer
 import android.net.Uri
 import android.util.Rational
 import androidx.compose.runtime.getValue
@@ -17,6 +18,7 @@ import com.faxel.app.data.Prefs
 import com.faxel.app.data.Subtitles
 import java.io.File
 import java.util.Locale
+import kotlin.math.log10
 
 /** Lecteur vidéo (plein écran, image dans l'image, sous-titres automatiques, reprise). */
 object VideoState {
@@ -51,6 +53,10 @@ object VideoState {
     /** Appui long : ×2 tant que le doigt reste posé. */
     var boosted by mutableStateOf(false)
         private set
+    var volumeLevel by mutableStateOf(1f)
+        private set
+    private var volumeEnhancer: LoudnessEnhancer? = null
+    private var enhancerSessionId = 0
     /** 0 = image entière, 1 = remplir l'écran, 2 = étirer. */
     var resize by mutableStateOf(0)
     /** Pistes de sous-titres et audio de la vidéo en cours. */
@@ -99,6 +105,7 @@ object VideoState {
         exo.setPlaybackSpeed(speed)
         exo.prepare()
         exo.play()
+        bindVolumeEnhancer(exo.audioSessionId)
         this.files = files
         this.index = index
         cancelAutoNext = false
@@ -125,6 +132,10 @@ object VideoState {
     }
 
     private val listener = object : Player.Listener {
+        override fun onAudioSessionIdChanged(audioSessionId: Int) {
+            bindVolumeEnhancer(audioSessionId)
+        }
+
         override fun onIsPlayingChanged(playing: Boolean) {
             isPlaying = playing
             if (!playing) savePosition()
@@ -158,6 +169,29 @@ object VideoState {
             if (state == Player.STATE_ENDED) {
                 player?.currentMediaItem?.mediaId?.let { positions.edit().remove(it).apply() }
             }
+        }
+    }
+
+    private fun bindVolumeEnhancer(sessionId: Int) {
+        if (sessionId <= 0 || sessionId == enhancerSessionId) return
+        runCatching { volumeEnhancer?.release() }
+        enhancerSessionId = sessionId
+        volumeEnhancer = runCatching { LoudnessEnhancer(sessionId).apply { enabled = true } }.getOrNull()
+        applyVolumeLevel()
+    }
+
+    /** Garder le curseur et le gain audio liés au vrai audio session du lecteur. */
+    fun setVolumeLevel(level: Float) {
+        volumeLevel = level.coerceIn(0.25f, 2f)
+        applyVolumeLevel()
+    }
+
+    private fun applyVolumeLevel() {
+        player?.volume = volumeLevel.coerceAtMost(1f)
+        val gainMb = if (volumeLevel > 1f) (2000f * log10(volumeLevel)).toInt() else 0
+        runCatching {
+            volumeEnhancer?.setTargetGain(gainMb)
+            volumeEnhancer?.enabled = true
         }
     }
 
@@ -329,6 +363,10 @@ object VideoState {
             release()
         }
         player = null
+        runCatching { volumeEnhancer?.release() }
+        volumeEnhancer = null
+        enhancerSessionId = 0
+        volumeLevel = 1f
         isPlaying = false
         open = false
         inPip = false

@@ -5,7 +5,6 @@ import android.content.ContentValues
 import android.content.Context
 import android.content.pm.ActivityInfo
 import android.graphics.Bitmap
-import android.media.audiofx.LoudnessEnhancer
 import android.os.Build
 import android.os.Environment
 import android.os.Handler
@@ -144,12 +143,7 @@ fun VideoScreen(onClose: () -> Unit) {
     var notice by remember { mutableStateOf<String?>(null) }
     var watermarkFile by remember { mutableStateOf<File?>(null) }
     var surface by remember { mutableStateOf<SurfaceView?>(null) }
-    var videoVolume by remember(player) { mutableFloatStateOf(1f) }
-    val loudnessEnhancer = remember(player?.audioSessionId) {
-        player?.audioSessionId?.takeIf { it > 0 }?.let { sessionId ->
-            runCatching { LoudnessEnhancer(sessionId).apply { enabled = true } }.getOrNull()
-        }
-    }
+    var videoVolume by remember(player) { mutableFloatStateOf(VideoState.volumeLevel) }
 
     BackHandler(enabled = !pip) {
         when {
@@ -175,9 +169,6 @@ fun VideoScreen(onClose: () -> Unit) {
         }
     }
 
-    DisposableEffect(loudnessEnhancer) {
-        onDispose { runCatching { loudnessEnhancer?.release() } }
-    }
 
     // Position (barre de progression, épisode suivant).
     LaunchedEffect(player) {
@@ -323,9 +314,7 @@ fun VideoScreen(onClose: () -> Unit) {
                                             hudLeft = level
                                         } else {
                                             videoVolume = level
-                                            player?.volume = level.coerceAtMost(1f)
-                                            val gainMb = if (level > 1f) (2000f * kotlin.math.log10(level)).toInt() else 0
-                                            runCatching { loudnessEnhancer?.setTargetGain(gainMb) }
+                                            VideoState.setVolumeLevel(level)
                                             hudRight = level
                                         }
                                     }

@@ -35,6 +35,7 @@ struct VideoPlayerView: View {
     @State private var importingSubtitle = false
     @State private var noticeText: String?
     @State private var generatingSubtitles = false
+    @State private var subtitleOptionsOpen = false
 
     private static let speeds: [Float] = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]
 
@@ -144,6 +145,11 @@ struct VideoPlayerView: View {
         .sheet(item: $watermarkTrack) { track in
             WatermarkView(track: track)
                 .environmentObject(model)
+        }
+        .sheet(isPresented: $subtitleOptionsOpen) {
+            subtitleOptionsSheet
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
         }
         .fileImporter(isPresented: $importingSubtitle, allowedContentTypes: subtitleTypes,
                       allowsMultipleSelection: false) { result in
@@ -604,122 +610,72 @@ struct VideoPlayerView: View {
     }
 
     private var subtitleMenu: some View {
-        Menu {
-            Button {
-                video.subtitlesOff()
-            } label: {
-                if video.hasSubtitles {
-                    Text(L("Désactivés"))
-                } else {
-                    Label(L("Désactivés"), systemImage: "checkmark")
-                }
-            }
-            if !video.externalSubtitles.isEmpty {
-                Section(L("Fichiers")) {
-                    ForEach(video.externalSubtitles, id: \.self) { url in
-                        Button {
-                            video.selectExternal(url)
-                        } label: {
-                            if video.selectedExternal == url {
-                                Label(SubtitleParser.displayName(url), systemImage: "checkmark")
-                            } else {
-                                Text(SubtitleParser.displayName(url))
-                            }
-                        }
-                    }
-                }
-            }
-            if !video.embeddedSubtitles.isEmpty {
-                Section(L("Intégrés à la vidéo")) {
-                    ForEach(video.embeddedSubtitles, id: \.self) { option in
-                        Button {
-                            video.selectEmbedded(option)
-                        } label: {
-                            if video.selectedEmbedded == option {
-                                Label(VideoPlayerModel.optionName(option), systemImage: "checkmark")
-                            } else {
-                                Text(VideoPlayerModel.optionName(option))
-                            }
-                        }
-                    }
-                }
-            }
-            Section {
-                Menu {
-                    ForEach([
-                        ("fr-FR", "Français"), ("en-US", "English"), ("ru-RU", "Русский"),
-                        ("es-ES", "Español"), ("de-DE", "Deutsch"), ("pt-BR", "Português"),
-                        ("it-IT", "Italiano"), ("ar-SA", "العربية"), ("zh-CN", "中文")
-                    ], id: \.0) { language in
-                        Button {
-                            videoSpeechLanguage = language.0
-                        } label: {
-                            if videoSpeechLanguage == language.0 {
-                                Label(language.1, systemImage: "checkmark")
-                            } else {
-                                Text(language.1)
-                            }
-                        }
-                    }
-                } label: {
-                    Label(L("Langue parlée : {language}", ["language": speechLanguageName]), systemImage: "waveform")
-                }
-                Button {
-                    generateSubtitles()
-                } label: {
-                    if generatingSubtitles {
-                        Label(L("Génération des sous-titres…"), systemImage: "waveform")
-                    } else {
-                        Label(L("Générer des sous-titres avec l'IA"), systemImage: "sparkles")
-                    }
-                }
-                .disabled(generatingSubtitles)
-                Button {
-                    importingSubtitle = true
-                } label: {
-                    Label(L("Charger un fichier de sous-titres…"), systemImage: "doc.badge.plus")
-                }
-                Menu {
-                    ForEach([1, 2, 3, 4], id: \.self) { size in
-                        Button {
-                            subtitleSize = size
-                        } label: {
-                            if subtitleSize == size {
-                                Label(sizeName(size), systemImage: "checkmark")
-                            } else {
-                                Text(sizeName(size))
-                            }
-                        }
-                    }
-                    Toggle(L("Fond sombre"), isOn: $subtitleBackground)
-                } label: {
-                    Label(L("Taille du texte"), systemImage: "textformat.size")
-                }
-                if video.selectedExternal != nil {
-                    Menu {
-                        ForEach([-2.0, -1.0, -0.5, 0.0, 0.5, 1.0, 2.0], id: \.self) { step in
-                            Button {
-                                if step == 0 {
-                                    video.subtitleDelay = 0
-                                } else {
-                                    video.subtitleDelay += step
-                                }
-                                showNotice(L("Décalage : {value} s", ["value": delayText(video.subtitleDelay)]))
-                            } label: {
-                                Text(stepLabel(step))
-                            }
-                        }
-                    } label: {
-                        Label(L("Décalage : {value} s", ["value": delayText(video.subtitleDelay)]), systemImage: "timer")
-                    }
-                }
-            }
+        Button {
+            hideWork?.cancel()
+            subtitleOptionsOpen = true
         } label: {
             Image(systemName: video.hasSubtitles ? "captions.bubble.fill" : "captions.bubble")
                 .font(.system(size: 18, weight: .semibold))
                 .frame(width: 40, height: 40)
         }
-        .simultaneousGesture(TapGesture().onEnded { hideWork?.cancel() })
+        .buttonStyle(.plain)
+    }
+
+    private var subtitleOptionsSheet: some View {
+        NavigationStack {
+            Form {
+                Section(L("Sous-titres")) {
+                    Button(L("Désactivés")) { video.subtitlesOff() }
+                    ForEach(video.externalSubtitles, id: \.self) { url in
+                        Button(SubtitleParser.displayName(url)) { video.selectExternal(url) }
+                    }
+                    ForEach(video.embeddedSubtitles, id: \.self) { option in
+                        Button(VideoPlayerModel.optionName(option)) { video.selectEmbedded(option) }
+                    }
+                    Button {
+                        subtitleOptionsOpen = false
+                        importingSubtitle = true
+                    } label: { Label(L("Charger un fichier de sous-titres…"), systemImage: "doc.badge.plus") }
+                }
+                Section(L("Génération IA")) {
+                    Picker(L("Langue parlée : {language}", ["language": speechLanguageName]), selection: $videoSpeechLanguage) {
+                        Text("Français").tag("fr-FR")
+                        Text("English").tag("en-US")
+                        Text("Русский").tag("ru-RU")
+                        Text("Español").tag("es-ES")
+                        Text("Deutsch").tag("de-DE")
+                        Text("Português").tag("pt-BR")
+                        Text("Italiano").tag("it-IT")
+                        Text("العربية").tag("ar-SA")
+                        Text("中文").tag("zh-CN")
+                    }
+                    Button { generateSubtitles() } label: {
+                        Label(generatingSubtitles ? L("Génération des sous-titres…") : L("Générer des sous-titres avec l'IA"), systemImage: "sparkles")
+                    }
+                    .disabled(generatingSubtitles)
+                }
+                Section(L("Apparence")) {
+                    Picker(L("Taille du texte"), selection: $subtitleSize) {
+                        ForEach([1, 2, 3, 4], id: \.self) { size in Text(sizeName(size)).tag(size) }
+                    }
+                    Toggle(L("Fond sombre"), isOn: $subtitleBackground)
+                    if video.selectedExternal != nil {
+                        HStack {
+                            Text(L("Décalage : {value} s", ["value": delayText(video.subtitleDelay)]))
+                            Spacer()
+                            Button("−") { video.subtitleDelay -= 0.5 }
+                            Button("0") { video.subtitleDelay = 0 }
+                            Button("+") { video.subtitleDelay += 0.5 }
+                        }
+                    }
+                }
+            }
+            .navigationTitle(L("Sous-titres"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .confirmationAction) { Button(L("Fermer")) { subtitleOptionsOpen = false } } }
+        }
+        .onAppear { hideWork?.cancel() }
+        .onDisappear { if video.isPlaying { scheduleHide() } }
     }
 
     private var speechLanguageName: String {

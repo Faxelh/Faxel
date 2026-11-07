@@ -153,9 +153,9 @@ struct RootView: View {
             homeDockButton
             libraryDockButton
             downloadDockButton
-            browserDockButton
             queueDockButton
             profileDockButton
+            browserDockButton
         }
         .padding(7)
         .background(Color(red: 0.12, green: 0.12, blue: 0.13), in: Capsule())
@@ -179,7 +179,7 @@ struct RootView: View {
     }
 
     private var browserDockButton: some View {
-        dockButton("person.3", label: L("Navigateur"), selected: model.showBrowser) {
+        dockButton("globe", label: L("Navigateur"), selected: model.showBrowser) {
             withAnimation(.spring(response: 0.42, dampingFraction: 0.9)) { model.showBrowser = true }
         }
     }

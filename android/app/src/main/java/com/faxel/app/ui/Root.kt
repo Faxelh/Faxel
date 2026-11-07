@@ -200,9 +200,9 @@ fun FaxelRoot() {
                             DockIcon(Icons.Rounded.Home, tab == Tab.Home, stringResource(R.string.tab_home), Modifier.weight(1f)) { tab = Tab.Home; searchOpen = false }
                             DockIcon(Icons.Rounded.SmartDisplay, tab == Tab.Library, stringResource(R.string.tab_library), Modifier.weight(1f)) { tab = Tab.Library; searchOpen = false }
                             DockIcon(Icons.Rounded.Storefront, tab == Tab.Download, stringResource(R.string.tab_download), Modifier.weight(1f), Engine.jobs.count { it.active }) { tab = Tab.Download; searchOpen = false }
-                            DockIcon(Icons.Rounded.Groups, tab == Tab.Browser, stringResource(R.string.tab_browser), Modifier.weight(1f)) { tab = Tab.Browser; searchOpen = false }
                             DockIcon(Icons.Rounded.Notifications, false, stringResource(R.string.tab_download), Modifier.weight(1f), Engine.jobs.count { it.failed }) { tab = Tab.Download; searchOpen = false }
                             DockIcon(Icons.Rounded.AccountCircle, tab == Tab.Settings, stringResource(R.string.tab_settings), Modifier.weight(1f), photo = Prefs.profilePhoto.value) { tab = Tab.Settings; searchOpen = false }
+                            DockIcon(Icons.Rounded.Language, tab == Tab.Browser, stringResource(R.string.tab_browser), Modifier.weight(1f)) { tab = Tab.Browser; searchOpen = false }
                         }
                     }
                 },
