@@ -1,5 +1,16 @@
 [
   {
+    "date": "2026-11-17T16:00:00Z",
+    "titre": "Choix des vidéos et vitesse Telegram",
+    "items": [
+      { "texte": "Convertisseur audio : recherche et vidéos regroupées par dossier et sous-dossier", "plateforme": "ios" },
+      { "texte": "Convertisseur audio : recherche et vidéos regroupées par dossier et sous-dossier", "plateforme": "android" },
+      { "texte": "Compression : onglets de source épinglés, grande zone de toucher et grille de vidéos alignée", "plateforme": "ios" },
+      { "texte": "Lecteur vidéo : accès direct à la vitesse et réglage jusqu’à 2,5×", "plateforme": "ios" },
+      { "texte": "Lecteur vidéo : choix de vitesse jusqu’à 2,5×", "plateforme": "android" }
+    ]
+  },
+  {
     "date": "2026-11-17T12:00:00Z",
     "titre": "Compression et sous-titres simplifiés",
     "items": [

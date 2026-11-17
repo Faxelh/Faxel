@@ -29,17 +29,19 @@ struct CompressionView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
-                    HStack(spacing: 8) {
-                        compressionSourceTab(title: L("Photos"), icon: "photo.on.rectangle.angled", selected: sourceTab == 0) { switchSource(to: 0) }
-                        compressionSourceTab(title: L("Vidéos de l'app"), icon: "play.rectangle", selected: sourceTab == 1) { switchSource(to: 1) }
-                    }
-                    .padding(6)
-                    .background(Color(.tertiarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-                    .padding(.horizontal, 16)
-                    .padding(.top, 12)
+            VStack(spacing: 0) {
+                HStack(spacing: 8) {
+                    compressionSourceTab(title: L("Photos"), icon: "photo.on.rectangle.angled", selected: sourceTab == 0) { switchSource(to: 0) }
+                    compressionSourceTab(title: L("Vidéos de l'app"), icon: "play.rectangle", selected: sourceTab == 1) { switchSource(to: 1) }
+                }
+                .padding(6)
+                .background(Color(.tertiarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+                .padding(.bottom, 10)
 
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 18) {
                     if sourceTab == 0 {
                         photosGrid
                         if let chosenPhoto {
@@ -75,7 +77,7 @@ struct CompressionView: View {
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 50)
                     } else {
-                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 145), spacing: 12)], spacing: 14) {
+                        LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 14) {
                             ForEach(model.videos) { track in
                                 videoCard(track)
                             }
@@ -105,8 +107,10 @@ struct CompressionView: View {
                             .padding(.horizontal, 16)
                     }
                     }
+                    }
+                    .padding(.top, 8)
+                    .padding(.bottom, 24)
                 }
-                .padding(.bottom, 24)
             }
             .scrollContentBackground(.hidden)
             .background(Color(.systemGroupedBackground))
@@ -199,7 +203,7 @@ struct CompressionView: View {
                 EmptyState(icon: "film", title: L("Aucune vidéo à compresser"), subtitle: L("Votre photothèque ne contient pas de vidéo."))
                     .frame(maxWidth: .infinity).padding(.vertical, 48)
             } else {
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 138), spacing: 12)], spacing: 14) {
+                LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 14) {
                     ForEach(photoVideos, id: \.localIdentifier) { asset in
                         let isSelected = chosenPhoto?.localIdentifier == asset.localIdentifier
                         Button { chosenPhoto = asset } label: { PhotoVideoCard(asset: asset, isSelected: isSelected) }

@@ -1,5 +1,11 @@
 import SwiftUI
 
+private struct ConversionFolderGroup: Identifiable {
+    let path: String
+    let tracks: [Track]
+    var id: String { path }
+}
+
 /// Onglet Accueil : écoutés récemment, ajoutés récemment, albums, vidéos,
 /// playlists et artistes, comme la page d'accueil de Musique.
 struct HomeView: View {
@@ -19,6 +25,7 @@ struct HomeView: View {
     @ObservedObject private var library = MediaLibrary.shared
     @State private var importing = false
     @State private var toolSheet: ToolSheet?
+    @State private var conversionSearch = ""
     @AppStorage("faxelProfileName") private var profileName = "Faxel"
     @AppStorage("faxelProfilePhotoPath") private var profilePhotoPath = ""
 
@@ -34,6 +41,19 @@ struct HomeView: View {
         formatter.locale = Lang.locale
         formatter.dateFormat = "EEEE d MMMM"
         return formatter.string(from: Date()).uppercased(with: Lang.locale)
+    }
+
+    private var conversionVideos: [Track] {
+        let query = conversionSearch.trimmingCharacters(in: .whitespacesAndNewlines)
+        return model.videos.filter { track in
+            query.isEmpty || "\(track.title) \(track.fileURL.lastPathComponent) \(track.fileURL.deletingLastPathComponent().path)"
+                .localizedCaseInsensitiveContains(query)
+        }.sorted { $0.fileURL.path.localizedStandardCompare($1.fileURL.path) == .orderedAscending }
+    }
+
+    private var conversionVideoGroups: [ConversionFolderGroup] {
+        let grouped = Dictionary(grouping: conversionVideos) { $0.fileURL.deletingLastPathComponent().path }
+        return grouped.keys.sorted().map { ConversionFolderGroup(path: $0, tracks: grouped[$0] ?? []) }
     }
 
     @ViewBuilder
@@ -157,29 +177,40 @@ struct HomeView: View {
                 switch sheet {
                 case .chooseVideo:
                     NavigationStack {
-                        List(model.videos) { track in
-                            Button {
-                                toolSheet = .convert(track)
-                            } label: {
-                                HStack(spacing: 12) {
-                                    Image(systemName: "video.fill").foregroundStyle(Color.brand)
-                                    VStack(alignment: .leading, spacing: 3) {
-                                        Text(track.title).foregroundStyle(.primary).lineLimit(2)
-                                        Text(track.fileURL.lastPathComponent).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                        List {
+                            if !conversionSearch.isEmpty {
+                                Section(L("Résultats de recherche")) {
+                                    ForEach(conversionVideos) { track in conversionVideoRow(track) }
+                                }
+                            } else if conversionVideoGroups.isEmpty {
+                                Text(L("Aucune vidéo disponible dans la bibliothèque."))
+                                    .foregroundStyle(.secondary)
+                            } else {
+                                ForEach(conversionVideoGroups) { group in
+                                    let folderURL = URL(fileURLWithPath: group.path, isDirectory: true)
+                                    let parentName = folderURL.deletingLastPathComponent().lastPathComponent
+                                    DisclosureGroup {
+                                        ForEach(group.tracks) { track in conversionVideoRow(track) }
+                                    } label: {
+                                        VStack(alignment: .leading, spacing: 3) {
+                                            Label(folderURL.lastPathComponent, systemImage: "folder.fill")
+                                                .font(.system(size: 15, weight: .semibold))
+                                            if !parentName.isEmpty, parentName != "/" {
+                                                Text("…/\(parentName)/\(folderURL.lastPathComponent)")
+                                                    .font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                                            }
+                                            Text(L("{count} vidéos", ["count": "\(group.tracks.count)"]))
+                                                .font(.caption2).foregroundStyle(.secondary)
+                                        }
                                     }
                                 }
                             }
                         }
-                        .overlay {
-                            if model.videos.isEmpty {
-                                Text(L("Aucune vidéo disponible dans la bibliothèque."))
-                                    .foregroundStyle(.secondary).multilineTextAlignment(.center).padding()
-                            }
-                        }
+                        .searchable(text: $conversionSearch, prompt: L("Rechercher une vidéo ou un dossier"))
                         .navigationTitle(L("Choisir une vidéo"))
                         .navigationBarTitleDisplayMode(.inline)
                         .toolbar { ToolbarItem(placement: .confirmationAction) {
-                            Button(L("Fermer")) { toolSheet = nil }
+                            Button(L("Fermer")) { conversionSearch = ""; toolSheet = nil }
                         } }
                     }
                 case .convert(let track):
@@ -208,6 +239,25 @@ struct HomeView: View {
         }
         .padding(.horizontal, 16)
         .disabled(model.songs.isEmpty)
+    }
+
+    private func conversionVideoRow(_ track: Track) -> some View {
+        Button {
+            conversionSearch = ""
+            toolSheet = .convert(track)
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "video.fill").foregroundStyle(Color.brand).frame(width: 26)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(track.title).foregroundStyle(.primary).lineLimit(2)
+                    Text(track.fileURL.lastPathComponent).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(.tertiary)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 
     @ViewBuilder

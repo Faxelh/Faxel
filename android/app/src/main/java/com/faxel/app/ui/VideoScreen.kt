@@ -120,7 +120,7 @@ import kotlinx.coroutines.delay
 import java.io.File
 import kotlin.math.abs
 
-private val SPEEDS = listOf(0.5f, 0.75f, 1f, 1.25f, 1.5f, 1.75f, 2f)
+private val SPEEDS = listOf(0.5f, 0.75f, 1f, 1.25f, 1.5f, 1.75f, 2f, 2.5f)
 
 /**
  * Lecteur vidéo plein écran : gestes (double-toucher ±10 s, appui long ×2, glisser à gauche

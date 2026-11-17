@@ -3,7 +3,7 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 private enum PlayerPanel: String, Identifiable {
-    case subtitles, options, episodes, translation
+    case subtitles, options, episodes, translation, speed
     case watermark
     var id: String { rawValue }
 }
@@ -44,7 +44,7 @@ struct VideoPlayerView: View {
     @State private var generatingSubtitles = false
     @State private var playerPanel: PlayerPanel?
 
-    private static let speeds: [Float] = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]
+    private static let speeds: [Float] = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.5]
 
     var body: some View {
         GeometryReader { geometry in
@@ -156,6 +156,7 @@ struct VideoPlayerView: View {
                 case .subtitles: subtitleOptionsSheet
                 case .options: moreOptionsPanel
                 case .episodes: episodeListPanel
+                case .speed: speedOptionsPanel
                 case .translation:
                     if #available(iOS 18.0, *), let subtitle = video.selectedExternal {
                         SubtitleTranslationView(sourceURL: subtitle, initialSourceLanguage: subtitleSpeechLanguageCode,
@@ -774,6 +775,53 @@ struct VideoPlayerView: View {
         }
     }
 
+    private var speedOptionsPanel: some View {
+        NavigationStack {
+            List {
+                Section(L("Vitesse de lecture")) {
+                    ForEach([0.5, 1, 1.5, 2, 2.5], id: \.self) { value in
+                        Button {
+                            UISelectionFeedbackGenerator().selectionChanged()
+                            video.setRate(Float(value))
+                            playerPanel = nil
+                            showControls()
+                        } label: {
+                            HStack {
+                                Text(value == 1 ? L("Normale (1×)") : speedText(Float(value)))
+                                Spacer()
+                                if video.rate == Float(value) { Image(systemName: "checkmark").foregroundStyle(Color.brand) }
+                            }
+                            .contentShape(Rectangle())
+                            .frame(minHeight: 42)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                Section(L("Réglage précis")) {
+                    ForEach([0.25, 0.75, 1.25, 1.75], id: \.self) { value in
+                        Button {
+                            video.setRate(Float(value))
+                            playerPanel = nil
+                            showControls()
+                        } label: {
+                            HStack {
+                                Text(speedText(Float(value)))
+                                Spacer()
+                                if video.rate == Float(value) { Image(systemName: "checkmark").foregroundStyle(Color.brand) }
+                            }
+                            .contentShape(Rectangle())
+                            .frame(minHeight: 42)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+            .navigationTitle(L("Vitesse"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .confirmationAction) { Button(L("Fermer")) { playerPanel = nil } } }
+        }
+    }
+
     private var episodeListPanel: some View {
         NavigationStack {
             ScrollViewReader { proxy in
@@ -1097,22 +1145,15 @@ struct VideoPlayerView: View {
                     scheduleHide()
                 }
                 Spacer()
-                Menu {
-                    ForEach(VideoPlayerView.speeds, id: \.self) { value in
-                        Button {
-                            video.setRate(value)
-                        } label: {
-                            if video.rate == value {
-                                Label(speedText(value), systemImage: "checkmark")
-                            } else {
-                                Text(speedText(value))
-                            }
-                        }
-                    }
+                Button {
+                    hideWork?.cancel()
+                    playerPanel = .speed
+                    controlsVisible = true
                 } label: {
                     barLabel("speedometer", speedText(video.rate), active: video.rate != 1)
                 }
-                .simultaneousGesture(TapGesture().onEnded { hideWork?.cancel() })
+                .buttonStyle(.plain)
+                .accessibilityLabel(L("Vitesse : {value}", ["value": speedText(video.rate)]))
                 Spacer()
                 barButton("lock", L("Écran")) {
                     touchLocked = true
