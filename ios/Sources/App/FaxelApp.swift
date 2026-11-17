@@ -64,6 +64,8 @@ struct RootView: View {
     @EnvironmentObject var jobStore: JobStore
     @State private var showQueue = false
     @State private var showCompression = false
+    @State private var miniPlayerOffset: CGSize = .zero
+    @State private var miniPlayerDragOrigin: CGSize = .zero
     @Namespace private var dockSelection
     @AppStorage("faxelProfilePhotoPath") private var profilePhotoPath = ""
 
@@ -80,8 +82,19 @@ struct RootView: View {
         .safeAreaInset(edge: .bottom, spacing: 0) { faxelDock }
         .overlay(alignment: .bottom) {
             MiniPlayer { model.showNowPlaying = true }
+                .frame(maxWidth: 360)
                 .padding(.horizontal, 8)
                 .padding(.bottom, 62)
+                .offset(miniPlayerOffset)
+                .simultaneousGesture(DragGesture(minimumDistance: 10)
+                    .onChanged { value in
+                        miniPlayerOffset = CGSize(width: miniPlayerDragOrigin.width + value.translation.width,
+                                                  height: miniPlayerDragOrigin.height + value.translation.height)
+                    }
+                    .onEnded { value in
+                        miniPlayerDragOrigin = CGSize(width: miniPlayerDragOrigin.width + value.translation.width,
+                                                      height: miniPlayerDragOrigin.height + value.translation.height)
+                    })
         }
         .overlay {
             if model.showBrowser {

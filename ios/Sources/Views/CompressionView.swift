@@ -58,16 +58,6 @@ struct CompressionView: View {
                                 Text(L("Taille actuelle : {size}", ["size": Fmt.size(photoAssetSize(chosenPhoto))]))
                                     .font(.system(size: 12))
                                     .foregroundStyle(.secondary)
-                                Button {
-                                    selectedPhoto = PhotoAssetSelection(asset: chosenPhoto)
-                                } label: {
-                                    Label(L("Continuer"), systemImage: "arrow.right")
-                                        .font(.system(size: 15, weight: .bold))
-                                        .frame(maxWidth: .infinity)
-                                        .padding(.vertical, 12)
-                                        .foregroundStyle(.white)
-                                        .background(Color.brand, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                                }
                             }
                             .padding(16)
                             .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
@@ -113,21 +103,6 @@ struct CompressionView: View {
                                     .foregroundStyle(Color.brand)
                             }
                             .font(.system(size: 12))
-                            Button {
-                                model.compress(track, videoPreset: selectedPreset)
-                            } label: {
-                                HStack(spacing: 8) {
-                                    if model.compressing.contains(track.path) { ProgressView(value: model.compressionProgress[track.path] ?? 0).tint(Color.brand) }
-                                    else { Image(systemName: "arrow.down.right.and.arrow.up.left") }
-                                    Text(model.compressing.contains(track.path) ? L("Compression en cours…") : L("Compresser la vidéo"))
-                                }
-                                .font(.system(size: 15, weight: .bold))
-                                .foregroundStyle(.white)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 14)
-                                .background(Color.brand, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                            }
-                            .disabled(model.compressing.contains(track.path))
                         }
                         .padding(16)
                         .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
@@ -150,6 +125,9 @@ struct CompressionView: View {
                     Button(L("Fermer")) { dismiss() }
                 }
             }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                compressionAction
+            }
         }
         .presentationDetents([.medium, .large])
         .onAppear {
@@ -165,6 +143,35 @@ struct CompressionView: View {
         .sheet(item: $selectedPhoto) { selection in
             PhotoCompressionSheet(asset: selection.asset)
         }
+    }
+
+    private var compressionAction: some View {
+        let selected = sourceTab == 0 ? chosenPhoto != nil : selectedTrack != nil
+        let busy = selectedTrack.map { model.compressing.contains($0.path) } ?? false
+        return Button {
+            if sourceTab == 0, let chosenPhoto {
+                selectedPhoto = PhotoAssetSelection(asset: chosenPhoto)
+            } else if sourceTab == 1, let track = selectedTrack {
+                model.compress(track, videoPreset: selectedPreset)
+            }
+        } label: {
+            HStack(spacing: 9) {
+                if busy { ProgressView().tint(.white) }
+                else { Image(systemName: sourceTab == 0 ? "arrow.right" : "arrow.down.right.and.arrow.up.left") }
+                Text(sourceTab == 0 ? L("Continuer avec cette vidéo") : busy ? L("Compression en cours…") : L("Compresser la vidéo"))
+            }
+            .font(.system(size: 16, weight: .semibold))
+            .foregroundStyle(.white)
+            .frame(maxWidth: .infinity)
+            .frame(height: 50)
+            .background(selected ? Color.brand : Color.gray.opacity(0.45), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .disabled(!selected || busy)
+        .padding(.horizontal, 16)
+        .padding(.top, 10)
+        .padding(.bottom, 8)
+        .background(.bar)
     }
 
     @ViewBuilder

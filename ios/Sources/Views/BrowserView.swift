@@ -1051,8 +1051,11 @@ struct BrowserView: View {
                 downloadPage()
             } label: {
                 Label(L("Télécharger cette vidéo"), systemImage: "arrow.down.circle.fill")
+                    .font(.system(size: 15, weight: .semibold))
+                    .frame(maxWidth: 260)
             }
             .buttonStyle(PrimaryButtonStyle())
+            .frame(maxWidth: 260)
             let active = jobStore.jobs.filter { $0.active }.count
             if active > 0 {
                 HStack(spacing: 6) {
