@@ -1,5 +1,14 @@
 [
   {
+    "date": "2026-11-17T12:00:00Z",
+    "titre": "Compression et sous-titres simplifiés",
+    "items": [
+      { "texte": "Onglets Photos et Vidéos de l’app agrandis pour faciliter le choix de la source", "plateforme": "ios" },
+      { "texte": "Onglets Photos et Vidéos de l’app agrandis pour faciliter le choix de la source", "plateforme": "android" },
+      { "texte": "Générer les sous-titres dans la langue parlée puis ouvrir directement la traduction vers la langue choisie", "plateforme": "ios" }
+    ]
+  },
+  {
     "date": "2026-11-17T11:12:21Z",
     "titre": "Lecteur audio, conversion et sous-titres",
     "items": [

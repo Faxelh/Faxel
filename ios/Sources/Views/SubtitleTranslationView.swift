@@ -7,9 +7,16 @@ struct SubtitleTranslationView: View {
     let sourceURL: URL
     let onComplete: (URL) -> Void
 
+    init(sourceURL: URL, initialSourceLanguage: String = "en", initialTargetLanguage: String = "fr", onComplete: @escaping (URL) -> Void) {
+        self.sourceURL = sourceURL
+        self.onComplete = onComplete
+        _sourceLanguage = State(initialValue: initialSourceLanguage)
+        _targetLanguage = State(initialValue: initialTargetLanguage)
+    }
+
     @Environment(\.dismiss) private var dismiss
-    @State private var sourceLanguage = "en"
-    @State private var targetLanguage = "fr"
+    @State private var sourceLanguage: String
+    @State private var targetLanguage: String
     @State private var configuration: TranslationSession.Configuration?
     @State private var translating = false
     @State private var errorMessage: String?

@@ -156,7 +156,7 @@ fun CompressionScreen(onClose: () -> Unit) {
         }
 
         Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Chip("Photos", sourceTab == 0) {
+            CompressionSourceTab("Photos", sourceTab == 0, Modifier.weight(1f)) {
                 if (sourceTab != 0) {
                     sourceTab = 0
                     selected = null
@@ -165,7 +165,7 @@ fun CompressionScreen(onClose: () -> Unit) {
                     error = null
                 }
             }
-            Chip("Vidéos de l'app", sourceTab == 1) {
+            CompressionSourceTab("Vidéos de l'app", sourceTab == 1, Modifier.weight(1f)) {
                 if (sourceTab != 1) {
                     sourceTab = 1
                     selected = null
@@ -257,6 +257,19 @@ fun CompressionScreen(onClose: () -> Unit) {
                 Button(onClick = onClose, colors = ButtonDefaults.buttonColors(containerColor = accent)) { Text("Terminé") }
             }
         }
+    }
+}
+
+@Composable
+private fun CompressionSourceTab(text: String, selected: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    Box(
+        modifier = modifier.height(54.dp).clip(RoundedCornerShape(15.dp))
+            .background(if (selected) accent else Surface2)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(text, color = Color.White, fontSize = 14.sp, fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+            maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 

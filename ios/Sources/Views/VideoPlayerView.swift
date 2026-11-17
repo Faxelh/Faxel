@@ -20,6 +20,7 @@ struct VideoPlayerView: View {
     @AppStorage("subtitleSize") private var subtitleSize = 2
     @AppStorage("subtitleBackground") private var subtitleBackground = true
     @AppStorage("videoSpeechLanguage") private var videoSpeechLanguage = "fr-FR"
+    @AppStorage("subtitleTargetLanguage") private var subtitleTargetLanguage = "fr"
     @AppStorage("autoLandscape") private var autoLandscape = true
 
     @State private var controlsVisible = true
@@ -157,7 +158,8 @@ struct VideoPlayerView: View {
                 case .episodes: episodeListPanel
                 case .translation:
                     if #available(iOS 18.0, *), let subtitle = video.selectedExternal {
-                        SubtitleTranslationView(sourceURL: subtitle) { translated in
+                        SubtitleTranslationView(sourceURL: subtitle, initialSourceLanguage: subtitleSpeechLanguageCode,
+                                                initialTargetLanguage: subtitleTargetLanguage) { translated in
                             video.importSubtitle(translated)
                             try? FileManager.default.removeItem(at: translated)
                             playerPanel = nil
@@ -302,6 +304,9 @@ struct VideoPlayerView: View {
                 video.importSubtitle(url)
                 try? FileManager.default.removeItem(at: url)
                 showNotice(L("Sous-titres IA ajoutés à cette vidéo."))
+                if #available(iOS 18.0, *), videoSpeechLanguage != subtitleTargetLanguage {
+                    playerPanel = .translation
+                }
             case .failure(let error):
                 playerPanel = nil
                 subtitleGenerationError = error.localizedDescription
@@ -711,16 +716,39 @@ struct VideoPlayerView: View {
                         Label(generatingSubtitles ? L("Génération des sous-titres…") : L("Générer des sous-titres avec l'IA"), systemImage: "sparkles")
                     }
                     .disabled(generatingSubtitles)
+                    if generatingSubtitles {
+                        ProgressView(L("Transcription audio en cours sur l’iPhone…"))
+                            .font(.footnote)
+                    }
                 }
                 Section(L("Traduction IA")) {
+                    Picker(L("Traduire en"), selection: $subtitleTargetLanguage) {
+                        Text("Français").tag("fr")
+                        Text("English").tag("en")
+                        Text("Español").tag("es")
+                        Text("Русский").tag("ru")
+                        Text("Deutsch").tag("de")
+                        Text("Português").tag("pt")
+                        Text("العربية").tag("ar")
+                    }
                     if video.selectedExternal != nil {
                         Button {
                             playerPanel = .translation
                         } label: {
-                            Label(L("Traduire les sous-titres…"), systemImage: "translate")
+                            Label(L("Traduire les sous-titres en {language}…", ["language": subtitleTargetName]), systemImage: "translate")
                         }
                     } else {
                         Text(L("Chargez ou sélectionnez d’abord un fichier de sous-titres à traduire."))
+                            .font(.footnote).foregroundStyle(.secondary)
+                    }
+                    if #available(iOS 18.0, *), video.selectedExternal == nil {
+                        Button {
+                            generateSubtitles()
+                        } label: {
+                            Label(L("Générer puis traduire en {language}", ["language": subtitleTargetName]), systemImage: "waveform.badge.magnifyingglass")
+                        }
+                        .disabled(generatingSubtitles)
+                        Text(L("Faxel transcrit la langue parlée choisie, puis traduit le texte des sous-titres. Cette option ne remplace pas la voix originale par une voix française."))
                             .font(.footnote).foregroundStyle(.secondary)
                     }
                 }
@@ -833,6 +861,24 @@ struct VideoPlayerView: View {
         case "zh-CN": return "中文"
         default: return "Français"
         }
+    }
+
+    private var subtitleTargetName: String {
+        switch subtitleTargetLanguage {
+        case "fr": return "Français"
+        case "en": return "English"
+        case "es": return "Español"
+        case "ru": return "Русский"
+        case "de": return "Deutsch"
+        case "pt": return "Português"
+        case "ar": return "العربية"
+        default: return "Français"
+        }
+    }
+
+    private var subtitleSpeechLanguageCode: String {
+        if videoSpeechLanguage == "zh-CN" { return "zh-Hans" }
+        return String(videoSpeechLanguage.split(separator: "-").first ?? "fr")
     }
 
     private var moreMenu: some View {

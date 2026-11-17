@@ -31,20 +31,12 @@ struct CompressionView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
-                    Picker(L("Source"), selection: Binding(
-                        get: { sourceTab },
-                        set: { value in
-                            guard value != sourceTab else { return }
-                            sourceTab = value
-                            selectedPath = ""
-                            chosenPhoto = nil
-                            selectedPhoto = nil
-                        }
-                    )) {
-                        Text(L("Photos")).tag(0)
-                        Text(L("Vidéos de l'app")).tag(1)
+                    HStack(spacing: 8) {
+                        compressionSourceTab(title: L("Photos"), icon: "photo.on.rectangle.angled", selected: sourceTab == 0) { switchSource(to: 0) }
+                        compressionSourceTab(title: L("Vidéos de l'app"), icon: "play.rectangle", selected: sourceTab == 1) { switchSource(to: 1) }
                     }
-                    .pickerStyle(.segmented)
+                    .padding(6)
+                    .background(Color(.tertiarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
                     .padding(.horizontal, 16)
                     .padding(.top, 12)
 
@@ -174,6 +166,31 @@ struct CompressionView: View {
         .background(.bar)
     }
 
+    private func switchSource(to value: Int) {
+        guard sourceTab != value else { return }
+        UISelectionFeedbackGenerator().selectionChanged()
+        sourceTab = value
+        selectedPath = ""
+        chosenPhoto = nil
+        selectedPhoto = nil
+    }
+
+    private func compressionSourceTab(title: String, icon: String, selected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Image(systemName: icon).font(.system(size: 16, weight: .semibold))
+                Text(title).font(.system(size: 14, weight: .semibold)).lineLimit(1).minimumScaleFactor(0.85)
+            }
+            .foregroundStyle(selected ? Color.white : Color.primary)
+            .frame(maxWidth: .infinity)
+            .frame(minHeight: 52)
+            .background(selected ? Color.brand : Color.clear, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+
     @ViewBuilder
     private var photosGrid: some View {
         switch photosAuthorization {
@@ -182,7 +199,7 @@ struct CompressionView: View {
                 EmptyState(icon: "film", title: L("Aucune vidéo à compresser"), subtitle: L("Votre photothèque ne contient pas de vidéo."))
                     .frame(maxWidth: .infinity).padding(.vertical, 48)
             } else {
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 105), spacing: 12)], spacing: 12) {
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 138), spacing: 12)], spacing: 14) {
                     ForEach(photoVideos, id: \.localIdentifier) { asset in
                         let isSelected = chosenPhoto?.localIdentifier == asset.localIdentifier
                         Button { chosenPhoto = asset } label: { PhotoVideoCard(asset: asset, isSelected: isSelected) }
@@ -357,7 +374,7 @@ private struct PhotoVideoCard: View {
                     if let image { Image(uiImage: image).resizable().scaledToFill() }
                     else { Color.secondary.opacity(0.2) }
                 }
-                .frame(height: 126).frame(maxWidth: .infinity).clipped()
+                .frame(height: 150).frame(maxWidth: .infinity).clipped()
                 HStack {
                     Text(Fmt.clock(asset.duration))
                     Spacer()
@@ -374,7 +391,7 @@ private struct PhotoVideoCard: View {
                         .padding(7)
                 }
             }
-            Text(photoAssetName(asset)).font(.system(size: 11, weight: .medium)).lineLimit(1)
+            Text(photoAssetName(asset)).font(.system(size: 12, weight: .semibold)).lineLimit(2).frame(minHeight: 32, alignment: .topLeading)
         }
         .padding(4)
         .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
