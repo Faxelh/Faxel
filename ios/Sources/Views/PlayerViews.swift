@@ -5,55 +5,67 @@ struct MiniPlayer: View {
     @EnvironmentObject var player: AudioPlayer
     @ObservedObject private var library = MediaLibrary.shared
     let open: () -> Void
+    @State private var collapsed = false
 
     var body: some View {
         if let track = player.current {
-            VStack(spacing: 0) {
-                HStack(spacing: 12) {
-                    TrackArtwork(track: track, width: 42, height: 42, radius: 7)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(library.title(track))
-                            .font(.system(size: 15, weight: .semibold))
-                            .lineLimit(1)
-                        Text(library.artist(track))
-                            .font(.system(size: 12))
-                            .foregroundColor(.secondary)
-                            .lineLimit(1)
+            Group {
+                if collapsed {
+                    ZStack(alignment: .bottomTrailing) {
+                        Button(action: open) {
+                            TrackArtwork(track: track, width: 64, height: 64, radius: 32)
+                                .clipShape(Circle())
+                                .overlay(Circle().stroke(.white.opacity(0.22), lineWidth: 1))
+                        }
+                        .buttonStyle(.plain)
+                        Button { player.toggle() } label: {
+                            Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundStyle(.white)
+                                .frame(width: 26, height: 26)
+                                .background(Color.brand, in: Circle())
+                        }
+                        .buttonStyle(.plain)
+                        .offset(x: 3, y: 3)
                     }
-                    Spacer(minLength: 4)
-                    Button {
-                        player.toggle()
-                    } label: {
-                        Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
-                            .font(.system(size: 22))
-                            .foregroundColor(.primary)
-                            .frame(width: 40, height: 40)
+                    .frame(width: 70, height: 70)
+                } else {
+                    VStack(spacing: 0) {
+                        HStack(spacing: 10) {
+                            Button(action: open) {
+                                HStack(spacing: 10) {
+                                    TrackArtwork(track: track, width: 42, height: 42, radius: 7)
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(library.title(track)).font(.system(size: 15, weight: .semibold)).lineLimit(1)
+                                        Text(library.artist(track)).font(.system(size: 12)).foregroundColor(.secondary).lineLimit(1)
+                                    }
+                                }
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                            Spacer(minLength: 2)
+                            Button { player.toggle() } label: {
+                                Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
+                                    .font(.system(size: 20)).foregroundColor(.primary).frame(width: 40, height: 44)
+                            }.buttonStyle(.plain)
+                            Button { player.next() } label: {
+                                Image(systemName: "forward.fill").font(.system(size: 18)).foregroundColor(.primary).frame(width: 36, height: 44)
+                            }.buttonStyle(.plain)
+                            Button { withAnimation(.spring(response: 0.3)) { collapsed = true } } label: {
+                                Image(systemName: "minus.circle.fill").font(.system(size: 19)).foregroundColor(.secondary).frame(width: 30, height: 44)
+                            }.buttonStyle(.plain).accessibilityLabel(L("Réduire le mini-lecteur"))
+                        }
+                        .padding(.horizontal, 10).padding(.vertical, 6)
+                        ClockProgressLine(clock: player.clock)
                     }
-                    .buttonStyle(.plain)
-                    Button {
-                        player.next()
-                    } label: {
-                        Image(systemName: "forward.fill")
-                            .font(.system(size: 19))
-                            .foregroundColor(.primary)
-                            .frame(width: 36, height: 40)
-                    }
-                    .buttonStyle(.plain)
+                    .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(.regularMaterial)
+                        .shadow(color: .black.opacity(0.15), radius: 10, y: 3))
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                 }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 8)
-                ClockProgressLine(clock: player.clock)
             }
-            .background(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(.regularMaterial)
-                    .shadow(color: .black.opacity(0.15), radius: 10, y: 3)
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .padding(.horizontal, 10)
+            .padding(.horizontal, 8)
             .padding(.bottom, 6)
-            .contentShape(Rectangle())
-            .onTapGesture(perform: open)
+            .animation(.spring(response: 0.32, dampingFraction: 0.82), value: collapsed)
         }
     }
 
@@ -169,6 +181,7 @@ struct NowPlayingView: View {
                     .frame(width: 40, height: 40)
                     .background(Circle().fill(Color.white.opacity(0.12)))
             }
+            .accessibilityLabel(L("Fermer le lecteur musique"))
             Spacer()
             VStack(spacing: 1) {
                 Text(L("En cours de lecture").uppercased())

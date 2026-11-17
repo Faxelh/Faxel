@@ -4,6 +4,7 @@ import UniformTypeIdentifiers
 
 private enum PlayerPanel: String, Identifiable {
     case subtitles, options, episodes
+    case watermark
     var id: String { rawValue }
 }
 
@@ -32,7 +33,6 @@ struct VideoPlayerView: View {
     @State private var hud: (icon: String, value: Double, left: Bool)?
     @State private var scrubStart: Double = 0
     @State private var scrubPreview: Double?
-    @State private var watermarkTrack: Track?
     @State private var snapshotImage: UIImage?
     @State private var dragStart: CGFloat = 0
     @State private var dragKind = 0
@@ -155,14 +155,12 @@ struct VideoPlayerView: View {
                 case .subtitles: subtitleOptionsSheet
                 case .options: moreOptionsPanel
                 case .episodes: episodeListPanel
+                case .watermark:
+                    if let track = video.current { WatermarkView(track: track).environmentObject(model) }
                 }
             }
             .presentationDetents([.medium, .large])
             .presentationDragIndicator(.visible)
-        }
-        .sheet(item: $watermarkTrack) { track in
-            WatermarkView(track: track)
-                .environmentObject(model)
         }
         .fileImporter(isPresented: $importingSubtitle, allowedContentTypes: subtitleTypes,
                       allowsMultipleSelection: false) { result in
@@ -784,7 +782,7 @@ struct VideoPlayerView: View {
                     Button { video.snapshot { image in if let image { UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil); showNotice(L("Capture enregistrée dans Photos")) } } } label: { Label(L("Capture d'écran"), systemImage: "camera") }
                     if let track = video.current {
                         Button { video.pause(); playerPanel = nil; model.compress(track) } label: { Label(L("Compresser une copie"), systemImage: "arrow.down.right.and.arrow.up.left") }
-                        Button { video.pause(); playerPanel = nil; watermarkTrack = track } label: { Label(L("Retirer un filigrane…"), systemImage: "wand.and.stars") }
+                        Button { video.pause(); playerPanel = .watermark } label: { Label(L("Retirer un filigrane…"), systemImage: "wand.and.stars") }
                         ShareLink(item: track.fileURL) { Label(L("Partager"), systemImage: "square.and.arrow.up") }
                     }
                 }
@@ -897,7 +895,7 @@ struct VideoPlayerView: View {
                 }
                 Button {
                     video.pause()
-                    watermarkTrack = track
+                    playerPanel = .watermark
                 } label: {
                     Label(L("Retirer un filigrane…"), systemImage: "wand.and.stars")
                 }
