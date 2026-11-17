@@ -243,4 +243,5 @@
     <string name="home_library_hint">Find and organize your files</string>
     <string name="home_browser_hint">Browse and download directly</string>
     <string name="home_settings_hint">Personalize Faxel</string>
+    <string name="close">Close</string>
 </resources>

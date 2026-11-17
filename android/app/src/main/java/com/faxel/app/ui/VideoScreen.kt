@@ -99,6 +99,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.PopupProperties
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -748,7 +749,11 @@ private fun TrackMenu(open: Boolean, type: Int, allowOff: Boolean, onClose: () -
     var sourceMenu by remember { mutableStateOf(false) }
     var translating by remember { mutableStateOf(false) }
     var translationError by remember { mutableStateOf<String?>(null) }
-    DropdownMenu(expanded = open, onDismissRequest = onClose) {
+    DropdownMenu(
+        expanded = open,
+        onDismissRequest = onClose,
+        properties = PopupProperties(focusable = true, dismissOnClickOutside = false, dismissOnBackPress = true),
+    ) {
         if (allowOff) {
             val anySelected = choices.any { it.selected }
             DropdownMenuItem(
@@ -776,6 +781,8 @@ private fun TrackMenu(open: Boolean, type: Int, allowOff: Boolean, onClose: () -
                 },
             )
         }
+        HorizontalDivider()
+        DropdownMenuItem(text = { Text(stringResource(R.string.close)) }, onClick = onClose)
     }
     if (translateDialog) {
         AlertDialog(
@@ -790,10 +797,12 @@ private fun TrackMenu(open: Boolean, type: Int, allowOff: Boolean, onClose: () -
                             TextButton(onClick = { sourceMenu = true }) {
                                 Text(SubtitleTranslator.languages.firstOrNull { it.first == sourceLanguage }?.second ?: sourceLanguage)
                             }
-                            DropdownMenu(expanded = sourceMenu, onDismissRequest = { sourceMenu = false }) {
+                            DropdownMenu(expanded = sourceMenu, onDismissRequest = { sourceMenu = false },
+                                properties = PopupProperties(focusable = true, dismissOnClickOutside = false, dismissOnBackPress = true)) {
                                 SubtitleTranslator.languages.forEach { (code, label) ->
                                     DropdownMenuItem(text = { Text(label) }, onClick = { sourceLanguage = code; sourceMenu = false })
                                 }
+                                DropdownMenuItem(text = { Text(stringResource(R.string.close)) }, onClick = { sourceMenu = false })
                             }
                         }
                     }
@@ -803,13 +812,15 @@ private fun TrackMenu(open: Boolean, type: Int, allowOff: Boolean, onClose: () -
                             TextButton(onClick = { languageMenu = true }) {
                                 Text(SubtitleTranslator.languages.first { it.first == targetLanguage }.second)
                             }
-                            DropdownMenu(expanded = languageMenu, onDismissRequest = { languageMenu = false }) {
+                            DropdownMenu(expanded = languageMenu, onDismissRequest = { languageMenu = false },
+                                properties = PopupProperties(focusable = true, dismissOnClickOutside = false, dismissOnBackPress = true)) {
                                 SubtitleTranslator.languages.forEach { (code, label) ->
                                     DropdownMenuItem(
                                         text = { Text(label) },
                                         onClick = { targetLanguage = code; languageMenu = false },
                                     )
                                 }
+                                DropdownMenuItem(text = { Text(stringResource(R.string.close)) }, onClick = { languageMenu = false })
                             }
                         }
                     }
@@ -860,7 +871,11 @@ private fun MoreMenu(
     onShot: () -> Unit,
     onWatermark: () -> Unit,
 ) {
-    DropdownMenu(expanded = open, onDismissRequest = onClose) {
+    DropdownMenu(
+        expanded = open,
+        onDismissRequest = onClose,
+        properties = PopupProperties(focusable = true, dismissOnClickOutside = false, dismissOnBackPress = true),
+    ) {
         when (page) {
             "speed" -> {
                 Column(Modifier.width(260.dp).padding(horizontal = 16.dp, vertical = 8.dp)) {
@@ -880,6 +895,7 @@ private fun MoreMenu(
                         onClick = { VideoState.setSpeed(value); onClose() },
                     )
                 }
+                DropdownMenuItem(text = { Text(stringResource(R.string.close)) }, onClick = onClose)
             }
             "sleep" -> {
                 DropdownMenuItem(text = { Text(stringResource(R.string.v_sleep_off)) }, onClick = { VideoState.setSleep(0); onClose() })
@@ -890,6 +906,7 @@ private fun MoreMenu(
                         onClick = { VideoState.setSleep(minutes); onClose() },
                     )
                 }
+                DropdownMenuItem(text = { Text(stringResource(R.string.close)) }, onClick = onClose)
             }
             else -> {
                 DropdownMenuItem(
@@ -913,6 +930,7 @@ private fun MoreMenu(
                 HorizontalDivider()
                 DropdownMenuItem(text = { Text(stringResource(R.string.v_screenshot)) }, onClick = { onClose(); onShot() })
                 DropdownMenuItem(text = { Text(stringResource(R.string.wm_title) + "…") }, onClick = { onClose(); onWatermark() })
+                DropdownMenuItem(text = { Text(stringResource(R.string.close)) }, onClick = onClose)
             }
         }
     }

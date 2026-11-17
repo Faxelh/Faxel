@@ -245,4 +245,5 @@
     <string name="home_library_hint">Retrouver et organiser vos fichiers</string>
     <string name="home_browser_hint">Naviguer et télécharger directement</string>
     <string name="home_settings_hint">Personnaliser Faxel</string>
+    <string name="close">Fermer</string>
 </resources>

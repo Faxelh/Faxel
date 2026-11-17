@@ -1,5 +1,13 @@
 [
   {
+    "date": "2026-11-17T13:03:00Z",
+    "titre": "Panneaux du lecteur vidéo qui restent ouverts",
+    "items": [
+      { "texte": "Les fenêtres Sous-titres, Vitesse, Options et Épisodes ne se ferment plus au glissement accidentel; bouton Fermer ajouté au besoin", "plateforme": "ios" },
+      { "texte": "Les menus Sous-titres, Audio, Vitesse et Options restent ouverts jusqu'à un choix ou à Fermer", "plateforme": "android" }
+    ]
+  },
+  {
     "date": "2026-11-17T12:56:00Z",
     "titre": "Thème bleu profond et recherche de conversion plus fluide",
     "items": [

@@ -143,7 +143,14 @@ struct VideoPlayerView: View {
         .onChange(of: video.isPlaying) { playing in
             if playing { scheduleHide() } else { showControls(autoHide: false) }
         }
-        .onChange(of: playerPanel) { panel in if panel == nil { scheduleHide() } }
+        .onChange(of: playerPanel) { panel in
+            if panel == nil {
+                scheduleHide()
+            } else {
+                hideWork?.cancel()
+                controlsVisible = true
+            }
+        }
         .onChange(of: video.index) { _ in
             autoRotate()
         }
@@ -172,6 +179,8 @@ struct VideoPlayerView: View {
                             Text(L("iOS 18 requis")).font(.headline)
                             Text(L("La traduction locale des sous-titres nécessite iOS 18 ou une version ultérieure."))
                                 .font(.footnote).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                            Button(L("Fermer")) { playerPanel = nil }
+                                .buttonStyle(.borderedProminent)
                         }.padding()
                     }
                 case .watermark:
@@ -187,6 +196,9 @@ struct VideoPlayerView: View {
                 video.importSubtitle(url)
             }
         }
+        // Les panneaux du lecteur restent ouverts pendant les gestes et le
+        // défilement; fermeture uniquement via leur bouton dédié ou une action.
+        .interactiveDismissDisabled(playerPanel != nil)
         .alert(L("Sous-titres"), isPresented: Binding(
             get: { subtitleGenerationError != nil },
             set: { if !$0 { subtitleGenerationError = nil } }
@@ -866,6 +878,7 @@ struct VideoPlayerView: View {
             }
             .navigationTitle(L("Épisodes"))
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .confirmationAction) { Button(L("Fermer")) { playerPanel = nil } } }
         }
     }
 
@@ -908,6 +921,7 @@ struct VideoPlayerView: View {
             }
             .navigationTitle(L("Options du lecteur"))
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .confirmationAction) { Button(L("Fermer")) { playerPanel = nil } } }
         }
     }
 
