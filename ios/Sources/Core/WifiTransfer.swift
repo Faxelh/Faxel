@@ -290,7 +290,7 @@ private enum TransferPage {
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Faxel – Transfert Wi-Fi</title>
 <style>
-:root{--brand:#7c5cff;--bg:#0f0f14;--card:#1b1b24;--text:#f4f4f8;--muted:#9a9ab0}
+:root{--brand:#1d4ed8;--bg:#0f0f14;--card:#1b1b24;--text:#f4f4f8;--muted:#9a9ab0}
 *{box-sizing:border-box}body{margin:0;font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--text)}
 main{max-width:760px;margin:0 auto;padding:32px 16px}
 h1{margin:0 0 4px;font-size:28px}p{color:var(--muted);margin:0 0 20px}

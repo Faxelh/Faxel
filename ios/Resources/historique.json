@@ -1,5 +1,15 @@
 [
   {
+    "date": "2026-11-17T12:56:00Z",
+    "titre": "Thème bleu profond et recherche de conversion plus fluide",
+    "items": [
+      { "texte": "Accent bleu profond appliqué à l'interface et proposé par défaut sur iPhone et Android", "plateforme": "ios" },
+      { "texte": "Accent bleu profond appliqué à l'interface et proposé par défaut sur iPhone et Android", "plateforme": "android" },
+      { "texte": "Sélecteur de conversion : index des dossiers mis en cache pour éviter de les recalculer pendant la recherche", "plateforme": "ios" },
+      { "texte": "Sélecteur de conversion : index des dossiers mis en cache pour éviter de les recalculer pendant la recherche", "plateforme": "android" }
+    ]
+  },
+  {
     "date": "2026-11-17T18:00:00Z",
     "titre": "Vitesse au toucher et corrections Photos",
     "items": [
@@ -12,7 +22,7 @@
     ]
   },
   {
-    "date": "2026-11-17T16:00:00Z",
+    "date": "2026-11-17T12:45:00Z",
     "titre": "Choix des vidéos et vitesse Telegram",
     "items": [
       { "texte": "Convertisseur audio : recherche et vidéos regroupées par dossier et sous-dossier", "plateforme": "ios" },

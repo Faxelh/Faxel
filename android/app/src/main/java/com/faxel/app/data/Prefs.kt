@@ -42,7 +42,7 @@ object Prefs {
 
     val defaultMedia = StringPref("defaultMedia", "video")
     val defaultQuality = StringPref("defaultQuality", "Meilleure")
-    val accent = StringPref("accent", "7C5CFF")
+    val accent = StringPref("accent", "1D4ED8")
     val askDownload = BoolPref("askDownload", true)
     val oneTapShare = BoolPref("oneTapShare", false)
     val autoSubtitles = BoolPref("autoSubtitles", true)
@@ -63,10 +63,13 @@ object Prefs {
     val bookmarks = mutableStateOf<List<WebLink>>(emptyList())
     val history = mutableStateOf<List<WebLink>>(emptyList())
 
-    val accents = listOf("7C5CFF", "FF2D60", "FF9500", "FFCC00", "34C759", "00C7BE", "0A84FF", "BF5AF2", "FF375F")
+    val accents = listOf("1D4ED8", "FF2D60", "FF9500", "FFCC00", "34C759", "00C7BE", "0A84FF", "155EEF", "FF375F")
 
     fun init(context: Context) {
         prefs = context.getSharedPreferences("faxel", Context.MODE_PRIVATE)
+        if (prefs.getString("accent", null)?.uppercase()?.let { it in setOf("7C5CFF", "BF5AF2", "5E5CE6") } == true) {
+            prefs.edit().putString("accent", "1D4ED8").apply()
+        }
         listOf(defaultMedia, defaultQuality, accent, homePage, searchEngine, playerCover, playerBackground,
             playerBackgroundPhoto, visualizerStyle, profilePhoto, profileName).forEach { it.load(prefs) }
         listOf(askDownload, oneTapShare, autoSubtitles, autoPip, askedStorage, playerAnimations, dimPlayerBackground, visualizerPermissionAsked).forEach { it.load(prefs) }

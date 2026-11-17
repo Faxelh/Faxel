@@ -26,6 +26,9 @@ struct HomeView: View {
     @State private var importing = false
     @State private var toolSheet: ToolSheet?
     @State private var conversionSearch = ""
+    @State private var cachedConversionGroups: [ConversionFolderGroup] = []
+    @State private var cachedConversionVideos: [Track] = []
+    @State private var conversionSearchIndex: [String: String] = [:]
     @AppStorage("faxelProfileName") private var profileName = "Faxel"
     @AppStorage("faxelProfilePhotoPath") private var profilePhotoPath = ""
 
@@ -45,15 +48,37 @@ struct HomeView: View {
 
     private var conversionVideos: [Track] {
         let query = conversionSearch.trimmingCharacters(in: .whitespacesAndNewlines)
-        return model.videos.filter { track in
-            query.isEmpty || "\(track.title) \(track.fileURL.lastPathComponent) \(track.fileURL.deletingLastPathComponent().path)"
-                .localizedCaseInsensitiveContains(query)
-        }.sorted { $0.fileURL.path.localizedStandardCompare($1.fileURL.path) == .orderedAscending }
+        guard !query.isEmpty else { return cachedConversionVideos }
+        let foldedQuery = query.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: Lang.locale)
+        return cachedConversionVideos.filter { conversionSearchIndex[$0.id]?.contains(foldedQuery) == true }
     }
 
     private var conversionVideoGroups: [ConversionFolderGroup] {
-        let grouped = Dictionary(grouping: conversionVideos) { $0.fileURL.deletingLastPathComponent().path }
-        return grouped.keys.sorted().map { ConversionFolderGroup(path: $0, tracks: grouped[$0] ?? []) }
+        let query = conversionSearch.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else { return cachedConversionGroups }
+        let foldedQuery = query.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: Lang.locale)
+        return cachedConversionGroups.compactMap { group in
+            let tracks = group.tracks.filter { conversionSearchIndex[$0.id]?.contains(foldedQuery) == true }
+            return tracks.isEmpty ? nil : ConversionFolderGroup(path: group.path, tracks: tracks)
+        }
+    }
+
+    private func rebuildConversionIndex() {
+        let videos = model.videos
+        let grouped = Dictionary(grouping: videos) { $0.fileURL.deletingLastPathComponent().path }
+        let groups = grouped.keys.sorted().map { path in
+            let tracks = (grouped[path] ?? []).sorted {
+                $0.fileURL.lastPathComponent.localizedStandardCompare($1.fileURL.lastPathComponent) == .orderedAscending
+            }
+            return ConversionFolderGroup(path: path, tracks: tracks)
+        }
+        cachedConversionGroups = groups
+        cachedConversionVideos = groups.flatMap(\.tracks)
+        conversionSearchIndex = Dictionary(cachedConversionVideos.map { track in
+            let searchable = "\(track.title) \(track.fileURL.lastPathComponent) \(track.fileURL.deletingLastPathComponent().path)"
+                .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: Lang.locale)
+            return (track.id, searchable)
+        }, uniquingKeysWith: { _, newest in newest })
     }
 
     @ViewBuilder
@@ -171,6 +196,8 @@ struct HomeView: View {
             .refreshable {
                 await MainActor.run { model.rescan(force: true) }
             }
+            .onAppear { rebuildConversionIndex() }
+            .onChange(of: model.tracks) { _ in rebuildConversionIndex() }
             .libraryDestinations()
             .importer(isPresented: $importing)
             .sheet(item: $toolSheet) { sheet in

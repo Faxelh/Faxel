@@ -51,7 +51,7 @@ struct PlayerBackground: View {
                 let time = context.date.timeIntervalSinceReferenceDate
                 Canvas { canvas, size in
                     let blobs: [(Color, Double, Double, Double)] = [
-                        (colors.first ?? .purple, 0.07, 0.25, 0.2),
+                        (colors.first ?? .brand, 0.07, 0.25, 0.2),
                         (colors.last ?? .blue, 0.05, 0.75, 0.55),
                         (.white, 0.04, 0.5, 0.85),
                     ]
@@ -188,7 +188,7 @@ struct PlayerCoverView: View {
             ZStack {
                 Circle()
                     .fill(AngularGradient(colors: [Color(white: 0.85), .cyan.opacity(0.7), .pink.opacity(0.6),
-                                                   .yellow.opacity(0.6), Color(white: 0.9), .purple.opacity(0.6),
+                                                   .yellow.opacity(0.6), Color(white: 0.9), .blue.opacity(0.6),
                                                    Color(white: 0.85)], center: .center))
                 Circle()
                     .stroke(Color.white.opacity(0.5), lineWidth: 1)

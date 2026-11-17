@@ -9,11 +9,16 @@ struct FaxelApp: App {
     @StateObject private var browser = BrowserModel()
     @AppStorage("theme") private var theme = "system"
     @AppStorage("language") private var language = "system"
-    @AppStorage("faxelAccentHex") private var accentHex = "8B5CF6"
+    @AppStorage("faxelAccentHex") private var accentHex = "1D4ED8"
     @AppStorage("faxelProfilePhotoPath") private var profilePhotoPath = ""
     @Environment(\.scenePhase) private var scenePhase
 
     init() {
+        let storedAccent = UserDefaults.standard.string(forKey: "faxelAccentHex")
+        let legacyPurpleAccents: Set<String> = ["8B5CF6", "5E5CE6", "AF52DE"]
+        if storedAccent == nil || storedAccent.map({ legacyPurpleAccents.contains($0.uppercased()) }) == true {
+            UserDefaults.standard.set("1D4ED8", forKey: "faxelAccentHex")
+        }
         SelfTest.runIfRequested()
     }
 

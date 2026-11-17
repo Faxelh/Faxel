@@ -3,7 +3,7 @@
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item>
         <shape android:shape="oval">
-            <gradient android:angle="315" android:startColor="#FF7C5CFF" android:endColor="#FFFF2D60" android:type="linear" />
+            <gradient android:angle="315" android:startColor="#FF1D4ED8" android:endColor="#FF0A84FF" android:type="linear" />
         </shape>
     </item>
     <item android:drawable="@drawable/ic_launcher_foreground" />

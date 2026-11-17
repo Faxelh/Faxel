@@ -7,7 +7,7 @@ import androidx.compose.ui.graphics.Color
 import com.faxel.app.data.Prefs
 
 fun colorFromHex(hex: String): Color {
-    val value = hex.trim().removePrefix("#").toLongOrNull(16) ?: 0x7C5CFFL
+    val value = hex.trim().removePrefix("#").toLongOrNull(16) ?: 0x1D4ED8L
     return Color(0xFF000000L or value)
 }
 
@@ -18,11 +18,11 @@ val Surface2 = Color(0xFF1E1E26)
 val Muted = Color(0xFF9A9AA8)
 
 val gradients = listOf(
-    listOf(Color(0xFF7C5CFF), Color(0xFFFF2D60)),
+    listOf(Color(0xFF1D4ED8), Color(0xFF00C7BE)),
     listOf(Color(0xFF0A84FF), Color(0xFF00C7BE)),
     listOf(Color(0xFFFF9500), Color(0xFFFF375F)),
     listOf(Color(0xFF34C759), Color(0xFF30B0C7)),
-    listOf(Color(0xFFBF5AF2), Color(0xFF5E5CE6)),
+    listOf(Color(0xFF155EEF), Color(0xFF0A84FF)),
 )
 
 fun gradientFor(seed: String): List<Color> = gradients[(seed.hashCode() and 0x7fffffff) % gradients.size]

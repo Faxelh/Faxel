@@ -324,7 +324,7 @@ struct DownloadAuroraBackground: View {
             Canvas { canvasContext, size in
                 let colors: [(Color, CGFloat, CGFloat)] = [
                     (.brand.opacity(0.22), 0.5 + 0.3 * CGFloat(sin(t * 0.07)), 0.15 + 0.2 * CGFloat(cos(t * 0.05))),
-                    (.purple.opacity(0.16), 0.2 + 0.2 * CGFloat(cos(t * 0.06)), 0.6 + 0.25 * CGFloat(sin(t * 0.08))),
+                    (Color(red: 0.07, green: 0.16, blue: 0.42).opacity(0.2), 0.2 + 0.2 * CGFloat(cos(t * 0.06)), 0.6 + 0.25 * CGFloat(sin(t * 0.08))),
                     (.blue.opacity(0.14), 0.8 + 0.15 * CGFloat(sin(t * 0.09)), 0.75 + 0.2 * CGFloat(cos(t * 0.04))),
                 ]
                 for (color, fx, fy) in colors {

@@ -62,10 +62,28 @@ fun HomeScreen(onNavigate: (Tab) -> Unit, onSearch: () -> Unit, onCompression: (
     var toolsExpanded by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
     var chooseVideo by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
     var conversionSearch by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf("") }
-    val videos = Engine.entries.filter { it.isVideo && it.exists }
-    val conversionGroups = videos.filter { entry ->
-        conversionSearch.isBlank() || "${entry.title} ${entry.path}".contains(conversionSearch.trim(), ignoreCase = true)
-    }.groupBy { File(it.path).parentFile?.absolutePath.orEmpty() }.toSortedMap()
+    // Le regroupement des dossiers était recalculé à chaque frappe dans la
+    // recherche (et à chaque recomposition). Garder l'index tant que la
+    // bibliothèque ne change pas rend le sélecteur fluide avec de gros médias.
+    val videos = androidx.compose.runtime.remember(Engine.entries) { Engine.entries.filter { it.isVideo && it.exists } }
+    val folders = androidx.compose.runtime.remember(videos) {
+        videos.groupBy { File(it.path).parentFile?.absolutePath.orEmpty() }
+            .toSortedMap().map { (path, entries) ->
+                val folder = File(path)
+                Triple(path, folder.name.ifBlank { "Racine" }, entries)
+            }
+    }
+    val searchIndex = androidx.compose.runtime.remember(videos) {
+        videos.associate { it.path to "${it.title} ${it.path}".lowercase() }
+    }
+    val query = conversionSearch.trim().lowercase()
+    val conversionGroups = androidx.compose.runtime.remember(folders, searchIndex, query) {
+        if (query.isBlank()) folders else folders.mapNotNull { (path, name, entries) ->
+            val folderTerm = name.lowercase().contains(query)
+            val matching = entries.filter { folderTerm || searchIndex[it.path]?.contains(query) == true }
+            if (matching.isEmpty()) null else Triple(path, name, matching)
+        }
+    }
     LazyColumn(
         Modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 24.dp),
@@ -141,12 +159,12 @@ fun HomeScreen(onNavigate: (Tab) -> Unit, onSearch: () -> Unit, onCompression: (
                         Text("Aucun résultat.", color = Muted)
                     } else {
                         LazyColumn(Modifier.heightIn(max = 360.dp)) {
-                            conversionGroups.forEach { (folderPath, entries) ->
+                            conversionGroups.forEach { (folderPath, folderName, entries) ->
                                 val folder = File(folderPath)
                                 val parent = folder.parentFile?.name.orEmpty()
                                 item(key = "folder:$folderPath") {
                                     Column(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 2.dp)) {
-                                        Text("📁 ${folder.name.ifBlank { "Racine" }}", color = accent, fontWeight = FontWeight.Bold)
+                                        Text("📁 $folderName", color = accent, fontWeight = FontWeight.Bold)
                                         if (parent.isNotBlank()) Text("$parent › ${folder.name}", color = Muted, fontSize = 11.sp)
                                         Text("${entries.size} vidéo(s)", color = Muted, fontSize = 11.sp)
                                     }

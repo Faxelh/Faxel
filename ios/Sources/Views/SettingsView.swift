@@ -23,7 +23,7 @@ struct SettingsView: View {
     @AppStorage("autoLandscape") private var autoLandscape = true
     @AppStorage("autoSubtitles") private var autoSubtitles = true
     @AppStorage("autoNextVideo") private var autoNextVideo = true
-    @AppStorage("faxelAccentHex") private var accentHex = "8B5CF6"
+    @AppStorage("faxelAccentHex") private var accentHex = "1D4ED8"
     @AppStorage("faxelProfileName") private var profileName = "Faxel"
     @AppStorage("faxelProfilePhotoPath") private var profilePhotoPath = ""
     @AppStorage("faxelPlayerPhotoPath") private var playerPhotoPath = ""
@@ -73,7 +73,7 @@ struct SettingsView: View {
                 } header: { Text(L("Profil")) }
                 Section {
                     HStack {
-                        ForEach(["FF2D60", "FF9500", "FFCC00", "34C759", "00C7BE", "0A84FF", "5E5CE6", "AF52DE"], id: \.self) { hex in
+                        ForEach(["1D4ED8", "FF2D60", "FF9500", "FFCC00", "34C759", "00C7BE", "0A84FF", "155EEF"], id: \.self) { hex in
                             Circle().fill(Color.hex(hex)).frame(width: 28, height: 28)
                                 .overlay(Circle().stroke(.white, lineWidth: accentHex == hex ? 2 : 0).padding(2))
                                 .onTapGesture { accentHex = hex }
@@ -215,7 +215,7 @@ struct SettingsView: View {
                         Text(L("Vidéo (MP4)")).tag("video")
                         Text(L("Audio (M4A)")).tag("audio")
                     } label: {
-                        SettingsLabel(title: L("Type par défaut"), icon: "film.fill", color: .purple)
+                        SettingsLabel(title: L("Type par défaut"), icon: "film.fill", color: .brand)
                     }
                     .pickerStyle(.navigationLink)
                     Picker(selection: $defaultQuality) {
@@ -347,7 +347,7 @@ struct SettingsView: View {
                     NavigationLink {
                         AppNameView()
                     } label: {
-                        SettingsLabel(title: L("Nom et icône de l'application"), icon: "app.badge", color: .purple)
+                        SettingsLabel(title: L("Nom et icône de l'application"), icon: "app.badge", color: .brand)
                     }
                     NavigationLink {
                         UpdatesView()

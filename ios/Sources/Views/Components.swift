@@ -2,11 +2,11 @@ import AVKit
 import SwiftUI
 
 extension Color {
-    /// Couleur d'accent de Faxel (violet #8B5CF6).
-    static var brand: Color { hex(UserDefaults.standard.string(forKey: "faxelAccentHex") ?? "8B5CF6") }
+    /// Couleur d'accent de Faxel (bleu profond par défaut).
+    static var brand: Color { hex(UserDefaults.standard.string(forKey: "faxelAccentHex") ?? "1D4ED8") }
     static func hex(_ value: String) -> Color {
         let raw = value.trimmingCharacters(in: CharacterSet(charactersIn: "#"))
-        guard let number = UInt64(raw, radix: 16) else { return Color(red: 139.0 / 255.0, green: 92.0 / 255.0, blue: 246.0 / 255.0) }
+        guard let number = UInt64(raw, radix: 16) else { return Color(red: 29.0 / 255.0, green: 78.0 / 255.0, blue: 216.0 / 255.0) }
         return Color(red: Double((number >> 16) & 0xff) / 255,
                      green: Double((number >> 8) & 0xff) / 255,
                      blue: Double(number & 0xff) / 255)
@@ -135,7 +135,7 @@ struct AirPlayButton: UIViewRepresentable {
     func makeUIView(context: Context) -> AVRoutePickerView {
         let view = AVRoutePickerView()
         view.tintColor = tint
-        view.activeTintColor = UIColor(red: 139.0 / 255.0, green: 92.0 / 255.0, blue: 246.0 / 255.0, alpha: 1)
+        view.activeTintColor = UIColor(red: 29.0 / 255.0, green: 78.0 / 255.0, blue: 216.0 / 255.0, alpha: 1)
         view.prioritizesVideoDevices = video
         return view
     }
