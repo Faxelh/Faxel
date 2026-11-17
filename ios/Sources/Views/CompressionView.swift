@@ -369,6 +369,108 @@ struct VideoAudioConversionView: View {
     }
 }
 
+/// Outils de découpe audio non destructifs : le fichier source est toujours conservé.
+struct AudioEditorView: View {
+    @EnvironmentObject private var model: AppModel
+    @Environment(\.dismiss) private var dismiss
+    let track: Track
+    @State private var duration = 1.0
+    @State private var start = 0.0
+    @State private var end = 1.0
+    @State private var operation = "extract"
+    @State private var exporting = false
+    @State private var progress = 0.0
+    @State private var error: String?
+    @State private var currentExport: AVAssetExportSession?
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section(L("Fichier audio")) {
+                    Text(track.title).font(.headline)
+                    Text(L("L'original reste intact. Le résultat est créé en M4A dans le même dossier."))
+                        .font(.footnote).foregroundStyle(.secondary)
+                }
+                Section(L("Action")) {
+                    Picker(L("Montage"), selection: $operation) {
+                        Text(L("Garder l'extrait")).tag("extract")
+                        Text(L("Supprimer cette partie")).tag("remove")
+                    }
+                    .pickerStyle(.segmented)
+                    Text(operation == "extract"
+                         ? L("Seule la plage choisie sera exportée dans un nouveau fichier.")
+                         : L("La plage choisie sera retirée et les deux parties restantes seront réunies."))
+                        .font(.footnote).foregroundStyle(.secondary)
+                }
+                Section(L("Plage à modifier")) {
+                    Text(L("Début : {time}", ["time": Fmt.clock(start)]))
+                    Slider(value: $start, in: 0...max(0.1, duration - 0.25))
+                        .onChange(of: start) { value in
+                            if end < value + 0.25 { end = min(duration, value + 0.25) }
+                        }
+                    Text(L("Fin : {time}", ["time": Fmt.clock(end)]))
+                    Slider(value: $end, in: min(duration, start + 0.25)...max(duration, start + 0.25))
+                    Text(L("Durée totale : {time}", ["time": Fmt.clock(duration)]))
+                        .font(.footnote).foregroundStyle(.secondary)
+                }
+                Section {
+                    if exporting {
+                        ProgressView(value: progress)
+                        Button(L("Annuler"), role: .destructive) { currentExport?.cancelExport() }
+                    } else {
+                        Button { exportEdit() } label: {
+                            Label(operation == "extract" ? L("Créer l'extrait") : L("Retirer cette partie"), systemImage: "waveform")
+                        }
+                        .disabled(operation == "remove" && duration - (end - start) < 0.25)
+                    }
+                    if let error { Text(error).foregroundStyle(.red).font(.footnote) }
+                }
+            }
+            .navigationTitle(L("Modifier l'audio"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .confirmationAction) {
+                Button(exporting ? L("Annuler") : L("Fermer")) {
+                    if exporting { currentExport?.cancelExport() } else { dismiss() }
+                }
+            } }
+            .interactiveDismissDisabled(exporting)
+        }
+        .onAppear {
+            duration = max(AVURLAsset(url: track.fileURL).duration.seconds, 1)
+            end = duration
+        }
+    }
+
+    private func exportEdit() {
+        let source = track.fileURL
+        let base = source.deletingLastPathComponent()
+            .appendingPathComponent(source.deletingPathExtension().lastPathComponent + (operation == "extract" ? " (extrait)" : " (audio modifié)"))
+        var target = base.appendingPathExtension("m4a")
+        var suffix = 2
+        while FileManager.default.fileExists(atPath: target.path) {
+            target = URL(fileURLWithPath: base.path + " \(suffix).m4a")
+            suffix += 1
+        }
+        exporting = true
+        error = nil
+        progress = 0
+        MediaCompressor.editAudio(source: source, target: target, start: start, end: end,
+                                  removeSelection: operation == "remove", progress: { progress = $0 },
+                                  exportSession: { currentExport = $0 }) { result in
+            exporting = false
+            currentExport = nil
+            switch result {
+            case .success:
+                model.rescan(force: true) {
+                    model.show(L("Audio créé : {name}", ["name": target.lastPathComponent]), .ok)
+                    dismiss()
+                }
+            case .failure(let failure): error = failure.localizedDescription
+            }
+        }
+    }
+}
+
 private struct PhotoVideoCard: View {
     let asset: PHAsset
     let isSelected: Bool

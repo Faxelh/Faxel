@@ -1,5 +1,13 @@
 [
   {
+    "date": "2026-11-17T13:58:00Z",
+    "titre": "Montage audio intégré",
+    "items": [
+      { "texte": "Éditeur audio : garder un extrait ou retirer une portion en réunissant les segments conservés, avec export M4A sans modifier l'original", "plateforme": "ios" },
+      { "texte": "Éditeur audio : garder un extrait ou retirer une portion en réunissant les segments conservés; montage sans perte des fichiers MP3 et AAC/M4A", "plateforme": "android" }
+    ]
+  },
+  {
     "date": "2026-11-17T13:03:00Z",
     "titre": "Panneaux du lecteur vidéo qui restent ouverts",
     "items": [

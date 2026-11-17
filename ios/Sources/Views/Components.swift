@@ -235,6 +235,11 @@ struct TrackActions: View {
         if track.exists {
             if track.isAudio {
                 Button {
+                    model.audioEditorTrack = track
+                } label: {
+                    Label(L("Modifier l’audio…"), systemImage: "waveform")
+                }
+                Button {
                     model.playNext(track)
                 } label: {
                     Label(L("Lire ensuite"), systemImage: "text.insert")

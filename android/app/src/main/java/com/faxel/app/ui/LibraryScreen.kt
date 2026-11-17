@@ -547,11 +547,20 @@ private fun EntryMenu(entry: Entry, open: Boolean, playlistId: String? = null, o
     var deleting by remember { mutableStateOf(false) }
     var convertRequested by remember { mutableStateOf(false) }
     var converting by remember { mutableStateOf(false) }
+    var editRequested by remember { mutableStateOf(false) }
+    var editing by remember { mutableStateOf(false) }
     LaunchedEffect(convertRequested, open) {
         if (convertRequested && !open) {
             delay(250)
             converting = true
             convertRequested = false
+        }
+    }
+    LaunchedEffect(editRequested, open) {
+        if (editRequested && !open) {
+            delay(250)
+            editing = true
+            editRequested = false
         }
     }
     if (open) {
@@ -560,6 +569,7 @@ private fun EntryMenu(entry: Entry, open: Boolean, playlistId: String? = null, o
                 Text(entry.title, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold, maxLines = 2,
                     overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(bottom = 8.dp))
                 if (entry.isAudio) MenuAction(stringResource(R.string.play_next)) { AudioConnection.playNext(entry); onClose() }
+                if (entry.isAudio) MenuAction("Modifier l'audio…") { editRequested = true; onClose() }
                 val fav = entry.path in Engine.favorites
                 MenuAction(stringResource(if (fav) R.string.remove_favorite else R.string.add_favorite)) { Engine.toggleFavorite(entry); onClose() }
                 MenuAction(stringResource(R.string.add_to_playlist)) { picking = true; onClose() }
@@ -573,6 +583,7 @@ private fun EntryMenu(entry: Entry, open: Boolean, playlistId: String? = null, o
         }
     }
     if (converting) VideoAudioConversion(entry) { converting = false }
+    if (editing) AudioEdit(entry) { editing = false }
     if (picking) PlaylistPicker(entry) { picking = false }
     if (deleting) {
         AlertDialog(

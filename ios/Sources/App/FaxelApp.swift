@@ -154,6 +154,10 @@ struct RootView: View {
             VideoAudioConversionView(track: track)
                 .environmentObject(model)
         }
+        .sheet(item: $model.audioEditorTrack) { track in
+            AudioEditorView(track: track)
+                .environmentObject(model)
+        }
         .fullScreenCover(item: $model.videoSession) { session in
             VideoPlayerView(session: session)
                 .environmentObject(model)

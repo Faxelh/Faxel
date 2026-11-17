@@ -127,6 +127,81 @@ extension PhotoSaver {
 
 /// Compression des vidéos (720p) et des sons (AAC) avec AVFoundation.
 enum MediaCompressor {
+    /// Coupe un extrait ou retire une portion d'un fichier audio en conservant le reste.
+    static func editAudio(source: URL, target: URL, start: Double, end: Double, removeSelection: Bool,
+                          progress: ((Double) -> Void)? = nil,
+                          exportSession: ((AVAssetExportSession) -> Void)? = nil,
+                          completion: @escaping (Result<Void, Error>) -> Void) {
+        let asset = AVURLAsset(url: source)
+        guard let sourceTrack = asset.tracks(withMediaType: .audio).first else {
+            completion(.failure(NSError(domain: "FaxelAudioEdit", code: 1,
+                                        userInfo: [NSLocalizedDescriptionKey: L("Aucune piste audio utilisable dans ce fichier.")])) )
+            return
+        }
+        let total = asset.duration.seconds
+        guard total.isFinite, total > 0, start.isFinite, end.isFinite,
+              start >= 0, end <= total, end - start >= 0.25,
+              (!removeSelection || total - (end - start) >= 0.25) else {
+            completion(.failure(NSError(domain: "FaxelAudioEdit", code: 2,
+                                        userInfo: [NSLocalizedDescriptionKey: L("La plage audio sélectionnée n'est pas valide.")])) )
+            return
+        }
+        let composition = AVMutableComposition()
+        guard let outputTrack = composition.addMutableTrack(withMediaType: .audio,
+                                                             preferredTrackID: kCMPersistentTrackID_Invalid) else {
+            completion(.failure(NSError(domain: "FaxelAudioEdit", code: 3,
+                                        userInfo: [NSLocalizedDescriptionKey: L("Faxel n'a pas pu préparer le montage audio.")])) )
+            return
+        }
+        let scale = max(asset.duration.timescale, 600)
+        let startTime = CMTime(seconds: start, preferredTimescale: scale)
+        let endTime = CMTime(seconds: end, preferredTimescale: scale)
+        do {
+            if removeSelection {
+                if startTime > .zero {
+                    try outputTrack.insertTimeRange(CMTimeRange(start: .zero, duration: startTime), of: sourceTrack, at: .zero)
+                }
+                let tailDuration = asset.duration - endTime
+                if tailDuration > .zero {
+                    let insertion = startTime
+                    try outputTrack.insertTimeRange(CMTimeRange(start: endTime, duration: tailDuration), of: sourceTrack, at: insertion)
+                }
+            } else {
+                try outputTrack.insertTimeRange(CMTimeRange(start: startTime, duration: endTime - startTime),
+                                                of: sourceTrack, at: .zero)
+            }
+        } catch {
+            completion(.failure(error))
+            return
+        }
+        guard let export = AVAssetExportSession(asset: composition, presetName: AVAssetExportPresetAppleM4A),
+              export.supportedFileTypes.contains(.m4a) else {
+            completion(.failure(NSError(domain: "FaxelAudioEdit", code: 4,
+                                        userInfo: [NSLocalizedDescriptionKey: L("L'export audio M4A n'est pas disponible sur cet appareil.")])) )
+            return
+        }
+        export.outputURL = target
+        export.outputFileType = .m4a
+        export.shouldOptimizeForNetworkUse = true
+        exportSession?(export)
+        let timer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { _ in
+            DispatchQueue.main.async { progress?(Double(export.progress)) }
+        }
+        export.exportAsynchronously {
+            DispatchQueue.main.async {
+                timer.invalidate()
+                if export.status == .completed {
+                    progress?(1)
+                    completion(.success(()))
+                } else {
+                    try? FileManager.default.removeItem(at: target)
+                    completion(.failure(export.error ?? NSError(domain: "FaxelAudioEdit", code: 5,
+                        userInfo: [NSLocalizedDescriptionKey: L("La modification audio a échoué.")])) )
+                }
+            }
+        }
+    }
+
     static func extractAudio(source: URL, target: URL, start: Double, end: Double?,
                              progress: ((Double) -> Void)? = nil,
                              exportSession: ((AVAssetExportSession) -> Void)? = nil,
