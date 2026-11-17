@@ -85,7 +85,7 @@ struct RootView: View {
                 .frame(maxWidth: 360)
                 .padding(.horizontal, 8)
                 .padding(.bottom, 62)
-                .offset(miniPlayerOffset)
+                .offset(x: miniPlayerOffset.width, y: miniPlayerOffset.height)
                 .simultaneousGesture(DragGesture(minimumDistance: 10)
                     .onChanged { value in
                         miniPlayerOffset = CGSize(width: miniPlayerDragOrigin.width + value.translation.width,

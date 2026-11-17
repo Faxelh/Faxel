@@ -38,7 +38,8 @@ extension PhotoSaver {
     /// PhotoKit's older convenience constructors can fail on local downloads on
     /// recent iOS versions (including error 3302). Explicit resource requests
     /// preserve the source file and report which item could not be imported.
-    private static func performChange(videos: [URL], images: [URL], completion: @escaping (Bool, String?) -> Void) {
+    private static func performChange(videos: [URL], images: [URL], allowVideoRepair: Bool = true,
+                                      completion: @escaping (Bool, String?) -> Void) {
         let files = videos + images
         guard let missing = files.first(where: { !FileManager.default.isReadableFile(atPath: $0.path) }) else {
             PHPhotoLibrary.shared().performChanges({
@@ -60,6 +61,20 @@ extension PhotoSaver {
                         completion(success, success ? nil : "Photos a refusé l'enregistrement.")
                         return
                     }
+                    if allowVideoRepair, videos.count == 1, images.isEmpty,
+                       error.domain == "PHPhotosErrorDomain", error.code == 3302 {
+                        Self.repairVideoForPhotos(videos[0]) { repaired, repairError in
+                            guard let repaired = repaired else {
+                                completion(false, repairError ?? error.localizedDescription)
+                                return
+                            }
+                            Self.performChange(videos: [repaired], images: [], allowVideoRepair: false) { ok, message in
+                                try? FileManager.default.removeItem(at: repaired)
+                                completion(ok, message)
+                            }
+                        }
+                        return
+                    }
                     let itemName = files.first?.lastPathComponent ?? "fichier"
                     let details = error.code == 3302
                         ? "Photos a refusé « \(itemName) » (erreur 3302). Le fichier original reste dans la bibliothèque Faxel. Vérifiez l’espace disponible et l’accès de Faxel dans Réglages > Confidentialité et sécurité > Photos."
@@ -70,6 +85,41 @@ extension PhotoSaver {
             return
         }
         DispatchQueue.main.async { completion(false, "Fichier inaccessible : \(missing.lastPathComponent).") }
+    }
+
+    /// Photos code 3302 means the resource failed validation. Re-export to a
+    /// standard H.264/AAC container once, then retry the import without touching
+    /// the user's original download.
+    private static func repairVideoForPhotos(_ source: URL, completion: @escaping (URL?, String?) -> Void) {
+        let asset = AVURLAsset(url: source)
+        let presets = AVAssetExportSession.exportPresets(compatibleWith: asset)
+        let preset = [AVAssetExportPresetHighestQuality, AVAssetExportPresetMediumQuality]
+            .first(where: { presets.contains($0) })
+        guard let preset, let export = AVAssetExportSession(asset: asset, presetName: preset) else {
+            completion(nil, "Photos refuse ce format vidéo et Faxel n'a pas pu le convertir.")
+            return
+        }
+        let type: AVFileType = export.supportedFileTypes.contains(.mp4) ? .mp4 : .mov
+        guard export.supportedFileTypes.contains(type) else {
+            completion(nil, "Aucun format compatible avec Photos n'est disponible pour cette vidéo.")
+            return
+        }
+        let ext = type == .mp4 ? "mp4" : "mov"
+        let target = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FaxelPhotos-\(UUID().uuidString).\(ext)")
+        export.outputURL = target
+        export.outputFileType = type
+        export.shouldOptimizeForNetworkUse = true
+        export.exportAsynchronously {
+            DispatchQueue.main.async {
+                guard export.status == .completed else {
+                    try? FileManager.default.removeItem(at: target)
+                    completion(nil, export.error?.localizedDescription ?? "La conversion vidéo a échoué.")
+                    return
+                }
+                completion(target, nil)
+            }
+        }
     }
 }
 

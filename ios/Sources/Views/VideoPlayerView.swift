@@ -633,8 +633,11 @@ struct VideoPlayerView: View {
                 } label: {
                     Image(systemName: "list.bullet")
                         .font(.system(size: 18, weight: .semibold))
-                        .frame(width: 40, height: 40)
+                        .frame(width: 48, height: 48)
+                        .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
+                .accessibilityLabel(L("Épisodes"))
             }
             subtitleMenu
             moreMenu
@@ -650,9 +653,11 @@ struct VideoPlayerView: View {
         } label: {
             Image(systemName: video.hasSubtitles ? "captions.bubble.fill" : "captions.bubble")
                 .font(.system(size: 18, weight: .semibold))
-                .frame(width: 40, height: 40)
+                .frame(width: 48, height: 48)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(L("Sous-titres"))
     }
 
     private var subtitleOptionsSheet: some View {
@@ -812,9 +817,11 @@ struct VideoPlayerView: View {
         } label: {
             Image(systemName: "ellipsis.circle")
                 .font(.system(size: 19, weight: .semibold))
-                .frame(width: 40, height: 40)
+                .frame(width: 48, height: 48)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(L("Options du lecteur"))
     }
 
     private var legacyMoreMenu: some View {

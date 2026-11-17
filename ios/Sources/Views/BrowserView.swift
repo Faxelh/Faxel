@@ -170,7 +170,9 @@ final class BrowserModel: NSObject, ObservableObject, WKNavigationDelegate, WKUI
         if (document.getElementById('nyx-touch-fix')) return;
         var style = document.createElement('style');
         style.id = 'nyx-touch-fix';
-        style.textContent = 'html, body, * { touch-action: pan-y !important; }';
+        // Ne pas imposer touch-action à chaque élément : cela désactivait des
+        // gestes et rendait les contrôles des Reels difficiles à toucher.
+        style.textContent = 'html, body { touch-action: manipulation !important; -webkit-tap-highlight-color: transparent; }';
         (document.head || document.documentElement).appendChild(style);
       } catch (e) {}
     })();
@@ -187,6 +189,9 @@ final class BrowserModel: NSObject, ObservableObject, WKNavigationDelegate, WKUI
           var v = videos[i];
           if (getComputedStyle(v).objectFit !== 'contain') v.style.setProperty('object-fit', 'contain', 'important');
           if (getComputedStyle(v).objectPosition !== 'center center') v.style.setProperty('object-position', 'center center', 'important');
+          v.style.setProperty('max-width', '100%', 'important');
+          v.style.setProperty('max-height', '100%', 'important');
+          v.style.setProperty('transform', 'none', 'important');
         }
       }
       fix(document);

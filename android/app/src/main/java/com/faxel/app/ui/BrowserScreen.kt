@@ -146,6 +146,9 @@ object Browser {
   function setFit(video) {
     if (getComputedStyle(video).objectFit !== 'contain') video.style.setProperty('object-fit', 'contain', 'important');
     if (getComputedStyle(video).objectPosition !== 'center center') video.style.setProperty('object-position', 'center center', 'important');
+    video.style.setProperty('max-width', '100%', 'important');
+    video.style.setProperty('max-height', '100%', 'important');
+    video.style.setProperty('transform', 'none', 'important');
   }
   fix(document);
   new MutationObserver(function (changes) {

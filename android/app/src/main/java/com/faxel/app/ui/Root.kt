@@ -8,6 +8,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -60,10 +61,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.clip
@@ -82,6 +86,7 @@ import com.faxel.app.engine.Storage
 import com.faxel.app.playback.AudioConnection
 import com.faxel.app.playback.VideoState
 import java.io.File
+import kotlin.math.roundToInt
 import coil.compose.AsyncImage
 
 enum class Tab(val icon: ImageVector, val label: Int) {
@@ -103,6 +108,8 @@ fun FaxelRoot() {
     var audioOpen by rememberSaveable { mutableStateOf(false) }
     var searchOpen by rememberSaveable { mutableStateOf(false) }
     var compressionOpen by rememberSaveable { mutableStateOf(false) }
+    var miniOffsetX by remember { mutableFloatStateOf(0f) }
+    var miniOffsetY by remember { mutableFloatStateOf(0f) }
     val snackbar = remember { SnackbarHostState() }
     val context = LocalContext.current
 
@@ -236,7 +243,15 @@ fun FaxelRoot() {
                     .align(Alignment.BottomCenter)
                     .navigationBarsPadding()
                     .padding(bottom = if (wide) 12.dp else 62.dp)
-                    .padding(horizontal = 10.dp),
+                    .padding(horizontal = 10.dp)
+                    .offset { IntOffset(miniOffsetX.roundToInt(), miniOffsetY.roundToInt()) }
+                    .pointerInput(Unit) {
+                        detectDragGestures { change, amount ->
+                            change.consume()
+                            miniOffsetX += amount.x
+                            miniOffsetY += amount.y
+                        }
+                    },
             )
         }
 
