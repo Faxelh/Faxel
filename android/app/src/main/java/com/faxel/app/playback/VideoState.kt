@@ -16,6 +16,7 @@ import androidx.media3.common.VideoSize
 import androidx.media3.exoplayer.ExoPlayer
 import com.faxel.app.data.Prefs
 import com.faxel.app.data.Subtitles
+import com.faxel.app.data.SubtitleFile
 import java.io.File
 import java.util.Locale
 import kotlin.math.log10
@@ -76,6 +77,7 @@ object VideoState {
 
     private lateinit var appContext: Context
     private val positions by lazy { appContext.getSharedPreferences("positions", Context.MODE_PRIVATE) }
+    private val translatedSubtitles = mutableMapOf<String, MutableList<SubtitleFile>>()
 
     fun play(context: Context, files: List<File>, start: Int) {
         appContext = context.applicationContext
@@ -114,7 +116,8 @@ object VideoState {
     }
 
     private fun item(file: File): MediaItem {
-        val subtitles = Subtitles.find(file)
+        val subtitles = (translatedSubtitles[file.absolutePath].orEmpty() + Subtitles.find(file))
+            .distinctBy { it.file.absolutePath }
         val configs = subtitles.mapIndexed { i, sub ->
             MediaItem.SubtitleConfiguration.Builder(Uri.fromFile(sub.file))
                 .setMimeType(sub.mime)
@@ -129,6 +132,40 @@ object VideoState {
             .setMediaMetadata(MediaMetadata.Builder().setTitle(file.nameWithoutExtension).build())
             .setSubtitleConfigurations(configs)
             .build()
+    }
+
+    /** Ajoute la piste traduite au média courant sans perdre sa position de lecture. */
+    fun attachTranslatedSubtitle(subtitle: File) {
+        val exo = player ?: return
+        val currentFile = current ?: return
+        val wasPlaying = exo.isPlaying
+        val position = exo.currentPosition
+        val language = subtitle.nameWithoutExtension.substringAfterLast('.', "fr").takeIf { it.length in 2..3 } ?: "fr"
+        val translated = SubtitleFile(
+            file = subtitle,
+            language = language,
+            label = Locale(language).getDisplayLanguage(Locale.getDefault()).replaceFirstChar { it.titlecase() },
+            forced = false,
+        )
+        translatedSubtitles.getOrPut(currentFile.absolutePath) { mutableListOf() }
+            .apply { if (none { it.file.absolutePath == subtitle.absolutePath }) add(translated) }
+        run {
+            exo.trackSelectionParameters = exo.trackSelectionParameters.buildUpon()
+                .setPreferredTextLanguage(language)
+                .build()
+        }
+        val currentIndex = exo.currentMediaItemIndex.coerceAtLeast(0)
+        val mediaItems = (0 until exo.mediaItemCount).map { mediaIndex ->
+            if (mediaIndex == currentIndex) item(currentFile) else exo.getMediaItemAt(mediaIndex)
+        }
+        if (mediaItems.isNotEmpty()) {
+            exo.setMediaItems(mediaItems, currentIndex, position)
+        } else {
+            exo.setMediaItem(item(currentFile), position)
+        }
+        exo.prepare()
+        exo.playWhenReady = wasPlaying
+        tracksVersion++
     }
 
     private val listener = object : Player.Listener {

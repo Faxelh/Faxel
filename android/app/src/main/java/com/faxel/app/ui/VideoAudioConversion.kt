@@ -56,7 +56,7 @@ fun VideoAudioConversion(entry: Entry, onClose: () -> Unit) {
         Column(Modifier.fillMaxWidth().padding(horizontal = 22.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text("Convertir en audio", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
             Text(entry.title, color = Color.LightGray, fontSize = 14.sp)
-            Text("Sortie : M4A (AAC)", color = accent, fontSize = 13.sp)
+            Text("Sortie : M4A (AAC, audio MP4)", color = accent, fontSize = 13.sp)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text("Toute la vidéo", color = Color.White)
                 Switch(checked = whole, onCheckedChange = { whole = it })

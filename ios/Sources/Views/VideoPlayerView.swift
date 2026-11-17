@@ -3,7 +3,7 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 private enum PlayerPanel: String, Identifiable {
-    case subtitles, options, episodes
+    case subtitles, options, episodes, translation
     case watermark
     var id: String { rawValue }
 }
@@ -155,6 +155,22 @@ struct VideoPlayerView: View {
                 case .subtitles: subtitleOptionsSheet
                 case .options: moreOptionsPanel
                 case .episodes: episodeListPanel
+                case .translation:
+                    if #available(iOS 18.0, *), let subtitle = video.selectedExternal {
+                        SubtitleTranslationView(sourceURL: subtitle) { translated in
+                            video.importSubtitle(translated)
+                            try? FileManager.default.removeItem(at: translated)
+                            playerPanel = nil
+                            showNotice(L("Sous-titres traduits et ajoutés au lecteur."))
+                        }
+                    } else {
+                        VStack(spacing: 12) {
+                            Image(systemName: "translate").font(.system(size: 34)).foregroundStyle(Color.brand)
+                            Text(L("iOS 18 requis")).font(.headline)
+                            Text(L("La traduction locale des sous-titres nécessite iOS 18 ou une version ultérieure."))
+                                .font(.footnote).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                        }.padding()
+                    }
                 case .watermark:
                     if let track = video.current { WatermarkView(track: track).environmentObject(model) }
                 }
@@ -695,6 +711,18 @@ struct VideoPlayerView: View {
                         Label(generatingSubtitles ? L("Génération des sous-titres…") : L("Générer des sous-titres avec l'IA"), systemImage: "sparkles")
                     }
                     .disabled(generatingSubtitles)
+                }
+                Section(L("Traduction IA")) {
+                    if video.selectedExternal != nil {
+                        Button {
+                            playerPanel = .translation
+                        } label: {
+                            Label(L("Traduire les sous-titres…"), systemImage: "translate")
+                        }
+                    } else {
+                        Text(L("Chargez ou sélectionnez d’abord un fichier de sous-titres à traduire."))
+                            .font(.footnote).foregroundStyle(.secondary)
+                    }
                 }
                 Section(L("Apparence")) {
                     Picker(L("Taille du texte"), selection: $subtitleSize) {

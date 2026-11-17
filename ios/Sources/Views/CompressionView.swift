@@ -280,7 +280,7 @@ struct VideoAudioConversionView: View {
             Form {
                 Section(L("Vidéo source")) {
                     Text(track.title).font(.headline)
-                    Text(L("Le son sera enregistré en M4A (AAC), à côté de la vidéo."))
+                    Text(L("Le son sera enregistré en M4A (AAC, audio MP4), à côté de la vidéo."))
                         .font(.footnote).foregroundStyle(.secondary)
                 }
                 Section(L("Extrait")) {

@@ -73,6 +73,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -109,7 +110,12 @@ import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import com.faxel.app.MainActivity
 import com.faxel.app.R
+import com.faxel.app.data.Subtitles
+import com.faxel.app.data.SubtitleTranslator
 import com.faxel.app.playback.VideoState
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.delay
 import java.io.File
 import kotlin.math.abs
@@ -728,9 +734,20 @@ private fun NextCard(seconds: Int, title: String, modifier: Modifier) {
 
 @Composable
 private fun TrackMenu(open: Boolean, type: Int, allowOff: Boolean, onClose: () -> Unit) {
+    val context = LocalContext.current
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
     // Relu quand les pistes changent.
     val version = VideoState.tracksVersion
     val choices = remember(version, open) { VideoState.choices(type) }
+    var translateDialog by remember { mutableStateOf(false) }
+    var targetLanguage by remember { mutableStateOf("fr") }
+    var languageMenu by remember { mutableStateOf(false) }
+    var sourceLanguage by remember(version, open) {
+        mutableStateOf(VideoState.current?.let { Subtitles.find(it).firstOrNull()?.language } ?: "en")
+    }
+    var sourceMenu by remember { mutableStateOf(false) }
+    var translating by remember { mutableStateOf(false) }
+    var translationError by remember { mutableStateOf<String?>(null) }
     DropdownMenu(expanded = open, onDismissRequest = onClose) {
         if (allowOff) {
             val anySelected = choices.any { it.selected }
@@ -748,6 +765,89 @@ private fun TrackMenu(open: Boolean, type: Int, allowOff: Boolean, onClose: () -
                 onClick = { VideoState.select(type, choice); onClose() },
             )
         }
+        if (type == C.TRACK_TYPE_TEXT && VideoState.current != null) {
+            HorizontalDivider()
+            DropdownMenuItem(
+                text = { Text("Traduire les sous-titres…") },
+                onClick = {
+                    onClose()
+                    translationError = null
+                    translateDialog = true
+                },
+            )
+        }
+    }
+    if (translateDialog) {
+        AlertDialog(
+            onDismissRequest = { if (!translating) translateDialog = false },
+            title = { Text("Traduire les sous-titres") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Choisissez les langues. Le modèle peut être téléchargé la première fois. Le minutage est conservé.")
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Depuis", modifier = Modifier.weight(1f))
+                        Box {
+                            TextButton(onClick = { sourceMenu = true }) {
+                                Text(SubtitleTranslator.languages.firstOrNull { it.first == sourceLanguage }?.second ?: sourceLanguage)
+                            }
+                            DropdownMenu(expanded = sourceMenu, onDismissRequest = { sourceMenu = false }) {
+                                SubtitleTranslator.languages.forEach { (code, label) ->
+                                    DropdownMenuItem(text = { Text(label) }, onClick = { sourceLanguage = code; sourceMenu = false })
+                                }
+                            }
+                        }
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Vers", modifier = Modifier.weight(1f))
+                        Box {
+                            TextButton(onClick = { languageMenu = true }) {
+                                Text(SubtitleTranslator.languages.first { it.first == targetLanguage }.second)
+                            }
+                            DropdownMenu(expanded = languageMenu, onDismissRequest = { languageMenu = false }) {
+                                SubtitleTranslator.languages.forEach { (code, label) ->
+                                    DropdownMenuItem(
+                                        text = { Text(label) },
+                                        onClick = { targetLanguage = code; languageMenu = false },
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    if (translating) {
+                        CircularProgressIndicator(modifier = Modifier.size(22.dp), color = accent, strokeWidth = 2.dp)
+                        Text("Téléchargement du modèle et traduction…", fontSize = 12.sp)
+                    }
+                    translationError?.let { Text(it, color = Color(0xFFFF7373), fontSize = 12.sp) }
+                }
+            },
+            confirmButton = {
+                TextButton(enabled = !translating, onClick = {
+                    val current = VideoState.current ?: return@TextButton
+                    val subtitle = Subtitles.find(current).firstOrNull()?.file
+                    if (subtitle == null) {
+                        translationError = "Aucun fichier de sous-titres n’a été trouvé. Ajoutez d’abord un fichier .srt ou activez une piste de sous-titres."
+                        return@TextButton
+                    }
+                    translating = true
+                    translationError = null
+                    scope.launch {
+                        val result = runCatching {
+                            withContext(Dispatchers.IO) {
+                                SubtitleTranslator.translate(context, subtitle, sourceLanguage, targetLanguage)
+                            }
+                        }
+                        translating = false
+                        result.onSuccess { file ->
+                            VideoState.attachTranslatedSubtitle(file)
+                            translateDialog = false
+                        }.onFailure { failure ->
+                            translationError = failure.localizedMessage ?: "La traduction a échoué."
+                        }
+                    }
+                }) { Text(if (translating) "Traduction…" else "Traduire") }
+            },
+            dismissButton = { TextButton(enabled = !translating, onClick = { translateDialog = false }) { Text("Fermer") } },
+        )
     }
 }
 
