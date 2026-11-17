@@ -1,13 +1,14 @@
 [
   {
-    "date": "2026-11-17T12:00:00Z",
-    "titre": "Conversion audio et sous-titres traduits",
+    "date": "2026-11-17T10:40:38Z",
+    "titre": "Lecteur audio, conversion et sous-titres",
     "items": [
       { "texte": "Extraire une piste audio en M4A (conteneur MPEG-4), avec ou sans découpe", "plateforme": "ios" },
       { "texte": "Extraire une piste audio en M4A (conteneur MPEG-4), avec ou sans découpe", "plateforme": "android" },
-      { "texte": "Traduire un fichier de sous-titres en conservant ses minutages avec la traduction intégrée au téléphone", "plateforme": "ios" },
-      { "texte": "Traduire les sous-titres d'une vidéo et les sélectionner dans le lecteur", "plateforme": "android" },
-      { "texte": "Génération de sous-titres à partir de la parole disponible dans le lecteur iPhone", "plateforme": "ios" }
+      { "texte": "Traduire une piste de sous-titres en conservant ses minutages", "plateforme": "ios" },
+      { "texte": "Traduire les sous-titres d'une vidéo et sélectionner la piste traduite dans le lecteur", "plateforme": "android" },
+      { "texte": "Génération automatique de sous-titres depuis la parole, avec choix de la langue", "plateforme": "ios" },
+      { "texte": "Mini lecteur audio iPhone : réduction en pastille et commande pour le fermer", "plateforme": "ios" }
     ]
   },
   {
