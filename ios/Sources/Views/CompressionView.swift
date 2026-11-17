@@ -252,7 +252,10 @@ struct CompressionView: View {
             VStack(alignment: .leading, spacing: 8) {
                 ZStack(alignment: .topTrailing) {
                     Artwork(url: track.thumbnail, seed: track.id, icon: "play.rectangle.fill",
-                            width: 180, height: 104, radius: 12)
+                            width: nil, height: nil, radius: 12)
+                        .frame(maxWidth: .infinity)
+                        .aspectRatio(16.0 / 9.0, contentMode: .fit)
+                        .clipped()
                     if selected {
                         Image(systemName: "checkmark.circle.fill")
                             .font(.system(size: 22, weight: .bold))

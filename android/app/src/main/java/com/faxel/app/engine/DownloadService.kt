@@ -14,6 +14,7 @@ import android.os.Build
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.os.PowerManager
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.ServiceCompat
@@ -25,18 +26,21 @@ import com.faxel.app.R
 class DownloadService : Service() {
     private val handler = Handler(Looper.getMainLooper())
     private var idleTicks = 0
+    private var downloadWakeLock: PowerManager.WakeLock? = null
 
     private val tick = object : Runnable {
         override fun run() {
             if (!Engine.active) {
                 idleTicks++
                 if (idleTicks > 3) {
+                    releaseDownloadWakeLock()
                     ServiceCompat.stopForeground(this@DownloadService, ServiceCompat.STOP_FOREGROUND_REMOVE)
                     stopSelf()
                     return
                 }
             } else {
                 idleTicks = 0
+                holdDownloadWakeLock()
             }
             NotificationManagerCompat.from(this@DownloadService).let { manager ->
                 if (canNotify(this@DownloadService)) manager.notify(ID, build())
@@ -51,15 +55,31 @@ class DownloadService : Service() {
         channels(this)
         val type = if (Build.VERSION.SDK_INT >= 29) ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC else 0
         runCatching { ServiceCompat.startForeground(this, ID, build(), type) }
-            .onFailure { stopSelf(); return START_NOT_STICKY }
+            .onFailure { stopSelf(); return START_STICKY }
         handler.removeCallbacks(tick)
         handler.post(tick)
-        return START_NOT_STICKY
+        holdDownloadWakeLock()
+        return START_STICKY
     }
 
     override fun onDestroy() {
         handler.removeCallbacks(tick)
+        releaseDownloadWakeLock()
         super.onDestroy()
+    }
+
+    private fun holdDownloadWakeLock() {
+        if (downloadWakeLock?.isHeld == true) return
+        val power = getSystemService(Context.POWER_SERVICE) as PowerManager
+        downloadWakeLock = power.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Faxel:downloads").apply {
+            setReferenceCounted(false)
+            acquire(6 * 60 * 60 * 1000L)
+        }
+    }
+
+    private fun releaseDownloadWakeLock() {
+        downloadWakeLock?.let { lock -> if (lock.isHeld) lock.release() }
+        downloadWakeLock = null
     }
 
     private fun build(): Notification {

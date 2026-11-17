@@ -798,6 +798,21 @@ struct VideoPlayerView: View {
                     }
                 }
                 Section(L("Réglage précis")) {
+                    HStack {
+                        Text("0,25×").font(.caption).foregroundStyle(.secondary)
+                        Slider(value: Binding(
+                            get: { Double(video.rate) },
+                            set: { video.setRate(Float($0)) }
+                        ), in: 0.25...2.5, step: 0.05)
+                        .tint(.brand)
+                        .accessibilityLabel(L("Vitesse de lecture"))
+                        Text("2,5×").font(.caption).foregroundStyle(.secondary)
+                    }
+                    HStack {
+                        Text(L("Vitesse actuelle"))
+                        Spacer()
+                        Text(speedText(video.rate)).fontWeight(.semibold).foregroundStyle(Color.brand)
+                    }
                     ForEach([0.25, 0.75, 1.25, 1.75], id: \.self) { value in
                         Button {
                             video.setRate(Float(value))

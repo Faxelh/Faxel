@@ -862,11 +862,24 @@ private fun MoreMenu(
 ) {
     DropdownMenu(expanded = open, onDismissRequest = onClose) {
         when (page) {
-            "speed" -> SPEEDS.forEach { value ->
-                DropdownMenuItem(
-                    text = { Text((if (VideoState.speed == value) "✓ " else "") + formatSpeed(value) + "×") },
-                    onClick = { VideoState.setSpeed(value); onClose() },
-                )
+            "speed" -> {
+                Column(Modifier.width(260.dp).padding(horizontal = 16.dp, vertical = 8.dp)) {
+                    Text("Vitesse : ${formatSpeed(VideoState.speed)}×", color = Color.White, fontWeight = FontWeight.SemiBold)
+                    Slider(
+                        value = VideoState.speed.coerceIn(0.5f, 2.5f),
+                        onValueChange = { VideoState.setSpeed(it) },
+                        valueRange = 0.5f..2.5f,
+                        steps = 7,
+                        colors = SliderDefaults.colors(thumbColor = accent, activeTrackColor = accent),
+                    )
+                }
+                HorizontalDivider()
+                SPEEDS.forEach { value ->
+                    DropdownMenuItem(
+                        text = { Text((if (VideoState.speed == value) "✓ " else "") + formatSpeed(value) + "×") },
+                        onClick = { VideoState.setSpeed(value); onClose() },
+                    )
+                }
             }
             "sleep" -> {
                 DropdownMenuItem(text = { Text(stringResource(R.string.v_sleep_off)) }, onClick = { VideoState.setSleep(0); onClose() })

@@ -93,7 +93,9 @@ extension PhotoSaver {
     private static func repairVideoForPhotos(_ source: URL, completion: @escaping (URL?, String?) -> Void) {
         let asset = AVURLAsset(url: source)
         let presets = AVAssetExportSession.exportPresets(compatibleWith: asset)
-        let preset = [AVAssetExportPresetHighestQuality, AVAssetExportPresetMediumQuality]
+        // Retenter avec un profil H.264 moins lourd et compatible Photos avant
+        // la qualité maximale, qui peut durer longtemps sur les vidéos longues.
+        let preset = [AVAssetExportPreset1280x720, AVAssetExportPresetMediumQuality, AVAssetExportPresetHighestQuality]
             .first(where: { presets.contains($0) })
         guard let preset, let export = AVAssetExportSession(asset: asset, presetName: preset) else {
             completion(nil, "Photos refuse ce format vidéo et Faxel n'a pas pu le convertir.")

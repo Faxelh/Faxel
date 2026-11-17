@@ -91,6 +91,7 @@ final class AppModel: ObservableObject {
     private var libraryRev = -1
     private var analysisToken = UUID()
     private var backgroundTask: UIBackgroundTaskIdentifier = .invalid
+    private var backgroundWorkGraceUntil: Date?
     private var pendingDownloadAdds = 0
     private var searchToken = UUID()
     private weak var audio: AudioPlayer?
@@ -196,7 +197,10 @@ final class AppModel: ObservableObject {
             if newJobs != self.jobStore.jobs {
                 self.jobStore.jobs = newJobs
             }
-            if !newJobs.contains(where: { $0.active }) && self.pendingDownloadAdds == 0 {
+            if newJobs.contains(where: { $0.active }) {
+                self.backgroundWorkGraceUntil = nil
+            } else if self.pendingDownloadAdds == 0,
+                      self.backgroundWorkGraceUntil.map({ Date() >= $0 }) ?? true {
                 self.endBackgroundWork()
             }
             for event in result["events"] as? [[String: Any]] ?? [] {
@@ -1095,6 +1099,9 @@ final class AppModel: ObservableObject {
 
     private func reserveBackgroundDownload() {
         pendingDownloadAdds += 1
+        // L'import yt-dlp et la création des tâches ne sont pas atomiques :
+        // un poll peut voir la file vide juste avant que le moteur ajoute le job.
+        backgroundWorkGraceUntil = Date().addingTimeInterval(12)
         beginBackgroundWork()
     }
 
@@ -1102,6 +1109,7 @@ final class AppModel: ObservableObject {
         guard backgroundTask != .invalid else { return }
         UIApplication.shared.endBackgroundTask(backgroundTask)
         backgroundTask = .invalid
+        backgroundWorkGraceUntil = nil
     }
 
     // MARK: - Compression

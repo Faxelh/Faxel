@@ -1023,18 +1023,18 @@ struct BrowserView: View {
                 downloadPage(queueNow: true)
             } label: {
                 Image(systemName: "checkmark")
-                    .font(.system(size: 20, weight: .heavy))
+                    .font(.system(size: 16, weight: .heavy))
                     .foregroundColor(.green)
-                    .frame(width: 48, height: 48)
+                    .frame(width: 40, height: 40)
                     .overlay(Circle().stroke(Color.green, lineWidth: 2))
             }
             Button {
                 browser.dismissPrompt()
             } label: {
                 Image(systemName: "xmark")
-                    .font(.system(size: 20, weight: .heavy))
+                    .font(.system(size: 16, weight: .heavy))
                     .foregroundColor(.red)
-                    .frame(width: 48, height: 48)
+                    .frame(width: 40, height: 40)
                     .overlay(Circle().stroke(Color.red, lineWidth: 2))
             }
         }

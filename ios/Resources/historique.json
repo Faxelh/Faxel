@@ -1,5 +1,17 @@
 [
   {
+    "date": "2026-11-17T18:00:00Z",
+    "titre": "Vitesse au toucher et corrections Photos",
+    "items": [
+      { "texte": "Confirmation de téléchargement : commandes Oui et Non réduites pour laisser plus de place au contenu", "plateforme": "ios" },
+      { "texte": "Compression iPhone : vignettes vidéo adaptées à la largeur réelle de chaque colonne", "plateforme": "ios" },
+      { "texte": "Lecteur vidéo : vitesse réglable par glissement continu sur iPhone et Android", "plateforme": "ios" },
+      { "texte": "Lecteur vidéo : vitesse réglable par glissement continu sur iPhone et Android", "plateforme": "android" },
+      { "texte": "Android : maintien du processeur actif pendant les téléchargements en arrière-plan", "plateforme": "android" },
+      { "texte": "iPhone : délai de sécurité avant de fermer la tâche de fond pendant l’ajout d’un téléchargement", "plateforme": "ios" }
+    ]
+  },
+  {
     "date": "2026-11-17T16:00:00Z",
     "titre": "Choix des vidéos et vitesse Telegram",
     "items": [
