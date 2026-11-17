@@ -251,10 +251,10 @@ struct CompressionView: View {
         return Button { selectedPath = track.path } label: {
             VStack(alignment: .leading, spacing: 8) {
                 ZStack(alignment: .topTrailing) {
-                    Artwork(url: track.thumbnail, seed: track.id, icon: "play.rectangle.fill",
-                            width: nil, height: nil, radius: 12)
-                        .frame(maxWidth: .infinity)
-                        .aspectRatio(16.0 / 9.0, contentMode: .fit)
+                Artwork(url: track.thumbnail, seed: track.id, icon: "play.rectangle.fill",
+                        width: nil, height: nil, radius: 12)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 112)
                         .clipped()
                     if selected {
                         Image(systemName: "checkmark.circle.fill")
@@ -267,7 +267,8 @@ struct CompressionView: View {
                         ProgressView().padding(7).background(.ultraThinMaterial, in: Circle()).padding(6)
                     }
                 }
-                Text(track.title).font(.system(size: 13, weight: .semibold)).lineLimit(2)
+            Text(track.title).font(.system(size: 13, weight: .semibold)).lineLimit(2)
+                .frame(height: 34, alignment: .topLeading)
                 Text(Fmt.size(fileSize(track.path))).font(.system(size: 11)).foregroundStyle(.secondary)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -483,7 +484,7 @@ private struct PhotoVideoCard: View {
                     if let image { Image(uiImage: image).resizable().scaledToFill() }
                     else { Color.secondary.opacity(0.2) }
                 }
-                .frame(height: 150).frame(maxWidth: .infinity).clipped()
+                .frame(height: 112).frame(maxWidth: .infinity).clipped()
                 HStack {
                     Text(Fmt.clock(asset.duration))
                     Spacer()
@@ -500,7 +501,7 @@ private struct PhotoVideoCard: View {
                         .padding(7)
                 }
             }
-            Text(photoAssetName(asset)).font(.system(size: 12, weight: .semibold)).lineLimit(2).frame(minHeight: 32, alignment: .topLeading)
+            Text(photoAssetName(asset)).font(.system(size: 12, weight: .semibold)).lineLimit(2).frame(height: 34, alignment: .topLeading)
         }
         .padding(4)
         .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))

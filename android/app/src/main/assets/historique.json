@@ -1,5 +1,13 @@
 [
   {
+    "date": "2026-11-17T14:03:00Z",
+    "titre": "Vignettes uniformes dans Compression",
+    "items": [
+      { "texte": "Les aperçus vidéo gardent le même cadre et la même hauteur dans les onglets Photos et Vidéos de l'app", "plateforme": "ios" },
+      { "texte": "Aperçus de compression au format paysage uniforme, avec cadrage fixe pour chaque vidéo", "plateforme": "android" }
+    ]
+  },
+  {
     "date": "2026-11-17T13:58:00Z",
     "titre": "Montage audio intégré",
     "items": [

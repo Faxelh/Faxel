@@ -230,7 +230,7 @@ fun CompressionScreen(onClose: () -> Unit) {
                                 .padding(10.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Thumb(entry.thumbnail, entry.path, modifier = Modifier.size(width = 100.dp, height = 64.dp).clip(RoundedCornerShape(9.dp)))
+                            Thumb(entry.thumbnail, entry.path, modifier = Modifier.size(width = 112.dp, height = 63.dp).clip(RoundedCornerShape(9.dp)))
                             Column(Modifier.weight(1f).padding(start = 11.dp)) {
                                 Text(entry.title, color = Color.White, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
                                 Text(formatSize(File(entry.path).length().toDouble()), color = Muted, fontSize = 12.sp)
