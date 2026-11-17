@@ -3,11 +3,22 @@ import SwiftUI
 /// Onglet Accueil : écoutés récemment, ajoutés récemment, albums, vidéos,
 /// playlists et artistes, comme la page d'accueil de Musique.
 struct HomeView: View {
+    private enum ToolSheet: Identifiable {
+        case chooseVideo, convert(Track), compress
+        var id: String {
+            switch self {
+            case .chooseVideo: return "choose-video"
+            case .compress: return "compress"
+            case .convert(let track): return "convert-\(track.id)"
+            }
+        }
+    }
+
     @EnvironmentObject var model: AppModel
     @EnvironmentObject var player: AudioPlayer
     @ObservedObject private var library = MediaLibrary.shared
     @State private var importing = false
-    @State private var showCompressor = false
+    @State private var toolSheet: ToolSheet?
     @AppStorage("faxelProfileName") private var profileName = "Faxel"
     @AppStorage("faxelProfilePhotoPath") private var profilePhotoPath = ""
 
@@ -79,7 +90,7 @@ struct HomeView: View {
                             .padding(.horizontal, 16)
                     }
                     quickActions
-                    Button { showCompressor = true } label: {
+                    Button { toolSheet = .compress } label: {
                         HStack(spacing: 12) {
                             Image(systemName: "arrow.down.right.and.arrow.up.left")
                                 .font(.system(size: 21, weight: .semibold))
@@ -112,6 +123,23 @@ struct HomeView: View {
             }
             .navigationTitle("")
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Menu {
+                        Button {
+                            toolSheet = .chooseVideo
+                        } label: {
+                            Label(L("Convertir une vidéo en audio"), systemImage: "waveform")
+                        }
+                        Button {
+                            toolSheet = .compress
+                        } label: {
+                            Label(L("Compresser une vidéo"), systemImage: "arrow.down.right.and.arrow.up.left")
+                        }
+                    } label: {
+                        CircleIcon(systemName: "wrench.and.screwdriver")
+                    }
+                    .accessibilityLabel(L("Outils vidéo et audio"))
+                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
                         importing = true
@@ -125,9 +153,40 @@ struct HomeView: View {
             }
             .libraryDestinations()
             .importer(isPresented: $importing)
-            .sheet(isPresented: $showCompressor) {
-                CompressionView()
-                    .environmentObject(model)
+            .sheet(item: $toolSheet) { sheet in
+                switch sheet {
+                case .chooseVideo:
+                    NavigationStack {
+                        List(model.videos) { track in
+                            Button {
+                                toolSheet = .convert(track)
+                            } label: {
+                                HStack(spacing: 12) {
+                                    Image(systemName: "video.fill").foregroundStyle(Color.brand)
+                                    VStack(alignment: .leading, spacing: 3) {
+                                        Text(track.title).foregroundStyle(.primary).lineLimit(2)
+                                        Text(track.fileURL.lastPathComponent).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                                    }
+                                }
+                            }
+                        }
+                        .overlay {
+                            if model.videos.isEmpty {
+                                Text(L("Aucune vidéo disponible dans la bibliothèque."))
+                                    .foregroundStyle(.secondary).multilineTextAlignment(.center).padding()
+                            }
+                        }
+                        .navigationTitle(L("Choisir une vidéo"))
+                        .navigationBarTitleDisplayMode(.inline)
+                        .toolbar { ToolbarItem(placement: .confirmationAction) {
+                            Button(L("Fermer")) { toolSheet = nil }
+                        } }
+                    }
+                case .convert(let track):
+                    VideoAudioConversionView(track: track).environmentObject(model)
+                case .compress:
+                    CompressionView().environmentObject(model)
+                }
             }
         }
     }

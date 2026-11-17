@@ -10,13 +10,16 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Download
+import androidx.compose.material.icons.rounded.Build
 import androidx.compose.material.icons.rounded.AutoFixHigh
 import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.Search
@@ -25,14 +28,21 @@ import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.VideoLibrary
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -41,10 +51,15 @@ import java.util.Date
 import java.util.Locale
 import com.faxel.app.R
 import com.faxel.app.data.Prefs
+import com.faxel.app.data.Entry
+import com.faxel.app.engine.Engine
 import coil.compose.AsyncImage
 
 @Composable
-fun HomeScreen(onNavigate: (Tab) -> Unit, onSearch: () -> Unit, onCompression: () -> Unit) {
+fun HomeScreen(onNavigate: (Tab) -> Unit, onSearch: () -> Unit, onCompression: () -> Unit, onConvert: (Entry) -> Unit) {
+    var toolsExpanded by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    var chooseVideo by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    val videos = Engine.entries.filter { it.isVideo && it.exists }
     LazyColumn(
         Modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 24.dp),
@@ -52,6 +67,22 @@ fun HomeScreen(onNavigate: (Tab) -> Unit, onSearch: () -> Unit, onCompression: (
     ) {
         item {
             Row(Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+                Box {
+                    IconButton(onClick = { toolsExpanded = true }, modifier = Modifier.size(44.dp).clip(CircleShape).background(Surface2)) {
+                        Icon(Icons.Rounded.Build, "Outils audio et vidéo", tint = accent, modifier = Modifier.size(23.dp))
+                    }
+                    DropdownMenu(expanded = toolsExpanded, onDismissRequest = { toolsExpanded = false }) {
+                        DropdownMenuItem(
+                            text = { Text("Convertir une vidéo en audio") },
+                            onClick = { toolsExpanded = false; chooseVideo = true },
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Compresser une vidéo") },
+                            onClick = { toolsExpanded = false; onCompression() },
+                        )
+                    }
+                }
+                Spacer(Modifier.size(8.dp))
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
                         SimpleDateFormat("EEEE d MMMM", Locale.getDefault()).format(Date()).uppercase(Locale.getDefault()),
@@ -83,6 +114,35 @@ fun HomeScreen(onNavigate: (Tab) -> Unit, onSearch: () -> Unit, onCompression: (
         item { HomeAction(Icons.Rounded.Language, stringResource(R.string.tab_browser), stringResource(R.string.home_browser_hint)) { onNavigate(Tab.Browser) } }
         item { HomeAction(Icons.Rounded.Settings, stringResource(R.string.tab_settings), stringResource(R.string.home_settings_hint)) { onNavigate(Tab.Settings) } }
         item { HomeAction(Icons.Rounded.AutoFixHigh, stringResource(R.string.home_compress), stringResource(R.string.home_compress_hint), onCompression) }
+    }
+    if (chooseVideo) {
+        AlertDialog(
+            onDismissRequest = { chooseVideo = false },
+            title = { Text("Choisir une vidéo") },
+            text = {
+                if (videos.isEmpty()) {
+                    Text("Aucune vidéo disponible dans la bibliothèque.")
+                } else {
+                    LazyColumn(Modifier.heightIn(max = 360.dp)) {
+                        items(videos, key = { it.key }) { entry ->
+                            Row(
+                                Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).clickable {
+                                    chooseVideo = false
+                                    onConvert(entry)
+                                }.padding(vertical = 12.dp, horizontal = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Column(Modifier.weight(1f)) {
+                                    Text(entry.title, color = androidx.compose.ui.graphics.Color.White, fontWeight = FontWeight.SemiBold)
+                                    Text(entry.path.substringAfterLast('/'), color = Muted, fontSize = 12.sp, maxLines = 1)
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { chooseVideo = false }) { Text("Fermer") } },
+        )
     }
 }
 

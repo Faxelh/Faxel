@@ -80,6 +80,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.faxel.app.R
+import com.faxel.app.data.Entry
 import com.faxel.app.data.Prefs
 import com.faxel.app.engine.Engine
 import com.faxel.app.engine.Storage
@@ -108,6 +109,7 @@ fun FaxelRoot() {
     var audioOpen by rememberSaveable { mutableStateOf(false) }
     var searchOpen by rememberSaveable { mutableStateOf(false) }
     var compressionOpen by rememberSaveable { mutableStateOf(false) }
+    var conversionEntry by remember { mutableStateOf<Entry?>(null) }
     var miniOffsetX by remember { mutableFloatStateOf(0f) }
     var miniOffsetY by remember { mutableFloatStateOf(0f) }
     val snackbar = remember { SnackbarHostState() }
@@ -162,7 +164,12 @@ fun FaxelRoot() {
                 if (tab != Tab.Browser) {
                     Box(Modifier.fillMaxSize().background(Color(0xFF0B0B0F)).blockTouches()) {
                         when (tab) {
-                            Tab.Home -> HomeScreen(onNavigate = { tab = it }, onSearch = { searchOpen = true }, onCompression = { compressionOpen = true })
+                            Tab.Home -> HomeScreen(
+                                onNavigate = { tab = it },
+                                onSearch = { searchOpen = true },
+                                onCompression = { compressionOpen = true },
+                                onConvert = { conversionEntry = it },
+                            )
                             Tab.Download -> DownloadScreen(onSearch = { searchOpen = true })
                             Tab.Library -> LibraryScreen(onOpenAudio = { audioOpen = true })
                             Tab.Settings -> SettingsScreen()
@@ -280,6 +287,7 @@ fun FaxelRoot() {
 
         if (VideoState.open) VideoScreen(onClose = { VideoState.close() })
         if (compressionOpen) CompressionScreen(onClose = { compressionOpen = false })
+        conversionEntry?.let { entry -> VideoAudioConversion(entry) { conversionEntry = null } }
     }
 
     StorageAccessDialog()
