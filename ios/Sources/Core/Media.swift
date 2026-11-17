@@ -107,8 +107,12 @@ enum MediaCompressor {
                     completion(.success(()))
                 } else {
                     try? FileManager.default.removeItem(at: target)
-                    completion(.failure(export.error ?? NSError(domain: "FaxelAudioExtract", code: 2,
-                        userInfo: [NSLocalizedDescriptionKey: L("La conversion vidéo vers audio a échoué.")]))))
+                    let failure = export.error ?? NSError(
+                        domain: "FaxelAudioExtract",
+                        code: 2,
+                        userInfo: [NSLocalizedDescriptionKey: L("La conversion vidéo vers audio a échoué.")]
+                    )
+                    completion(.failure(failure))
                 }
             }
         }
