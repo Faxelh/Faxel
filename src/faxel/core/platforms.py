@@ -12,13 +12,14 @@ PLATFORMS = {
     "tiktok": {"name": "TikTok", "hosts": ("tiktok.com",), "icon": "tiktok", "symbol": "♪"},
     "instagram": {"name": "Instagram", "hosts": ("instagram.com",), "icon": "instagram", "symbol": "◎"},
     "x": {"name": "X", "hosts": ("x.com", "twitter.com"), "icon": "x", "symbol": "𝕏"},
+    "threads": {"name": "Threads", "hosts": ("threads.net", "threads.com"), "icon": "threads", "symbol": "@"},
     "dailymotion": {"name": "Dailymotion", "hosts": ("dailymotion.com", "dai.ly"), "icon": "other", "symbol": "⌁"},
     "vimeo": {"name": "Vimeo", "hosts": ("vimeo.com",), "icon": "other", "symbol": "⌁"},
     "other": {"name": "Autres liens", "hosts": (), "icon": "other", "symbol": "⌁"},
 }
 
 # Onglets "vidéo unique" affichés dans le menu, dans cet ordre.
-SINGLE_TABS = ("youtube", "facebook", "tiktok", "instagram", "x", "other")
+SINGLE_TABS = ("youtube", "facebook", "tiktok", "instagram", "x", "threads", "other")
 
 # Paramètres de suivi/partage qui ne changent pas la vidéo désignée :
 # ignorés pour reconnaître deux liens identiques.
@@ -135,6 +136,10 @@ def video_id_from_url(url):
 
     if _host_matches(host, "x.com") or _host_matches(host, "twitter.com"):
         match = re.search(r"/status(?:es)?/(\d+)", path)
+        return match.group(1) if match else None
+
+    if _host_matches(host, "threads.net") or _host_matches(host, "threads.com"):
+        match = re.search(r"/(?:post|reel)/([A-Za-z0-9_-]+)", path)
         return match.group(1) if match else None
 
     return None

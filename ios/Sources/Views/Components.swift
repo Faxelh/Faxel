@@ -267,6 +267,11 @@ struct TrackActions: View {
                 } label: {
                     Label(L("Retirer un filigrane…"), systemImage: "wand.and.stars")
                 }
+                Button {
+                    model.audioConversionTrack = track
+                } label: {
+                    Label(L("Convertir en audio…"), systemImage: "waveform")
+                }
             }
             if track.isFolder {
                 ShareLink(items: track.photoURLs) {

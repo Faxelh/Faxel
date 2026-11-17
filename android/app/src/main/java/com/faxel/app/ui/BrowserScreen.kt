@@ -97,6 +97,7 @@ val sites = listOf(
     Site("Instagram", "https://www.instagram.com", listOf(Color(0xFFF58529), Color(0xFFDD2A7B))),
     Site("Facebook", "https://m.facebook.com", listOf(Color(0xFF1877F2), Color(0xFF0A4CB3))),
     Site("X", "https://x.com", listOf(Color(0xFF333333), Color(0xFF000000))),
+    Site("Threads", "https://www.threads.com", listOf(Color(0xFF555555), Color(0xFF111111))),
     Site("Vimeo", "https://vimeo.com", listOf(Color(0xFF1AB7EA), Color(0xFF0E7FA5))),
     Site("Dailymotion", "https://www.dailymotion.com", listOf(Color(0xFF0066DC), Color(0xFF00A3FF))),
     Site("SoundCloud", "https://m.soundcloud.com", listOf(Color(0xFFFF5500), Color(0xFFFF8800))),
@@ -129,6 +130,29 @@ object Browser {
   window.__faxelAwakeReport = function () { last = null; report(); };
   setInterval(report, 2000);
   report();
+})();
+"""
+
+    /** Affiche le cadre vidéo complet sur les sites qui utilisent object-fit:cover. */
+    private const val VIDEO_FRAME_FIX = """
+(function () {
+  if (window.__faxelFrameFix) return; window.__faxelFrameFix = true;
+  function fix(root) {
+    if (!root) return;
+    if (root.matches && root.matches('video')) setFit(root);
+    var videos = root.querySelectorAll ? root.querySelectorAll('video') : [];
+    for (var i = 0; i < videos.length; i++) setFit(videos[i]);
+  }
+  function setFit(video) {
+    if (getComputedStyle(video).objectFit !== 'contain') video.style.setProperty('object-fit', 'contain', 'important');
+    if (getComputedStyle(video).objectPosition !== 'center center') video.style.setProperty('object-position', 'center center', 'important');
+  }
+  fix(document);
+  new MutationObserver(function (changes) {
+    for (var i = 0; i < changes.length; i++) for (var j = 0; j < changes[i].addedNodes.length; j++) {
+      var node = changes[i].addedNodes[j]; if (node.nodeType === 1) fix(node);
+    }
+  }).observe(document.documentElement, { childList: true, subtree: true });
 })();
 """
 
@@ -197,6 +221,7 @@ object Browser {
 
             override fun onPageFinished(view: WebView, url: String) {
                 view.evaluateJavascript(AWAKE_SCRIPT, null)
+                view.evaluateJavascript(VIDEO_FRAME_FIX, null)
                 update(view)
                 Prefs.visit(url, view.title ?: "")
             }
@@ -207,7 +232,10 @@ object Browser {
             override fun onProgressChanged(view: WebView, newProgress: Int) {
                 progress = newProgress
                 // Les sites qui chargent sans fin (fil de reels) : le guetteur est posé tôt.
-                if (newProgress >= 60) view.evaluateJavascript(AWAKE_SCRIPT, null)
+                if (newProgress >= 60) {
+                    view.evaluateJavascript(AWAKE_SCRIPT, null)
+                    view.evaluateJavascript(VIDEO_FRAME_FIX, null)
+                }
             }
 
             override fun onReceivedTitle(view: WebView, title: String?) {

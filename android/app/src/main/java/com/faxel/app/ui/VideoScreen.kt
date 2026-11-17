@@ -12,6 +12,8 @@ import android.os.Looper
 import android.provider.MediaStore
 import android.view.PixelCopy
 import android.view.SurfaceView
+import android.view.TextureView
+import android.view.View
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.annotation.OptIn
@@ -38,6 +40,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -144,8 +147,9 @@ fun VideoScreen(onClose: () -> Unit) {
     var rotationLocked by remember { mutableStateOf(false) }
     var notice by remember { mutableStateOf<String?>(null) }
     var watermarkFile by remember { mutableStateOf<File?>(null) }
-    var surface by remember { mutableStateOf<SurfaceView?>(null) }
+    var surface by remember { mutableStateOf<View?>(null) }
     var videoVolume by remember(player) { mutableFloatStateOf(VideoState.volumeLevel) }
+    val episodeListState = rememberLazyListState()
 
     BackHandler(enabled = !pip) {
         when {
@@ -211,6 +215,11 @@ fun VideoScreen(onClose: () -> Unit) {
             notice = null
         }
     }
+    LaunchedEffect(menu, VideoState.index) {
+        if (menu == "episodes" && VideoState.index in VideoState.files.indices) {
+            episodeListState.animateScrollToItem(VideoState.index)
+        }
+    }
 
     fun show() {
         controls = true
@@ -220,10 +229,11 @@ fun VideoScreen(onClose: () -> Unit) {
     Box(Modifier.fillMaxSize().background(Color.Black)) {
         AndroidView(
             factory = { ctx ->
-                PlayerView(ctx).apply {
+                android.view.LayoutInflater.from(ctx)
+                    .inflate(com.faxel.app.R.layout.player_view_texture, null, false)
+                    .let { it as PlayerView }.apply {
                     useController = false
                     setKeepContentOnPlayerReset(true)
-                    surface = videoSurfaceView as? SurfaceView
                 }
             },
             update = { playerView ->
@@ -559,7 +569,7 @@ fun VideoScreen(onClose: () -> Unit) {
                 onDismissRequest = { menu = null },
                 title = { Text("Épisodes") },
                 text = {
-                    androidx.compose.foundation.lazy.LazyColumn {
+                    androidx.compose.foundation.lazy.LazyColumn(state = episodeListState) {
                         items(VideoState.files.size) { episode ->
                             val file = VideoState.files[episode]
                             androidx.compose.material3.TextButton(
@@ -593,15 +603,11 @@ private fun currentBrightness(activity: Activity?): Float {
 }
 
 /** Capture de l'image affichée, enregistrée dans Images › Faxel. */
-private fun capture(context: Context, surface: SurfaceView?, done: (Boolean) -> Unit) {
+private fun capture(context: Context, surface: View?, done: (Boolean) -> Unit) {
     val view = surface ?: return done(false)
-    if (Build.VERSION.SDK_INT < 24 || view.width <= 0 || view.height <= 0) return done(false)
+    if (view.width <= 0 || view.height <= 0) return done(false)
     val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
-    PixelCopy.request(view, bitmap, { result ->
-        if (result != PixelCopy.SUCCESS) {
-            done(false)
-            return@request
-        }
+    fun saveFrame(frame: Bitmap) {
         val ok = runCatching {
             val name = "Faxel_${System.currentTimeMillis()}.jpg"
             if (Build.VERSION.SDK_INT >= 29) {
@@ -611,17 +617,27 @@ private fun capture(context: Context, surface: SurfaceView?, done: (Boolean) -> 
                     put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/Faxel")
                 }
                 val uri = context.contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values) ?: error("uri")
-                context.contentResolver.openOutputStream(uri)?.use { bitmap.compress(Bitmap.CompressFormat.JPEG, 92, it) }
+                context.contentResolver.openOutputStream(uri)?.use { frame.compress(Bitmap.CompressFormat.JPEG, 92, it) }
             } else {
                 val folder = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "Faxel").apply { mkdirs() }
                 val file = File(folder, name)
-                file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.JPEG, 92, it) }
+                file.outputStream().use { frame.compress(Bitmap.CompressFormat.JPEG, 92, it) }
                 android.media.MediaScannerConnection.scanFile(context, arrayOf(file.absolutePath), null, null)
             }
             true
         }.getOrDefault(false)
         done(ok)
-    }, Handler(Looper.getMainLooper()))
+    }
+    when (view) {
+        is TextureView -> view.bitmap?.let(::saveFrame) ?: done(false)
+        is SurfaceView -> {
+            if (Build.VERSION.SDK_INT < 24) return done(false)
+            PixelCopy.request(view, bitmap, { result ->
+                if (result == PixelCopy.SUCCESS) saveFrame(bitmap) else done(false)
+            }, Handler(Looper.getMainLooper()))
+        }
+        else -> done(false)
+    }
 }
 
 @Composable

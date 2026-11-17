@@ -77,8 +77,12 @@ struct RootView: View {
 
     var body: some View {
         mainTabs
-        .safeAreaInset(edge: .bottom) { MiniPlayer { model.showNowPlaying = true } }
         .safeAreaInset(edge: .bottom, spacing: 0) { faxelDock }
+        .overlay(alignment: .bottom) {
+            MiniPlayer { model.showNowPlaying = true }
+                .padding(.horizontal, 8)
+                .padding(.bottom, 62)
+        }
         .overlay {
             if model.showBrowser {
                 BrowserView()
@@ -127,6 +131,10 @@ struct RootView: View {
         }
         .sheet(isPresented: $showCompression) {
             CompressionView().environmentObject(model)
+        }
+        .sheet(item: $model.audioConversionTrack) { track in
+            VideoAudioConversionView(track: track)
+                .environmentObject(model)
         }
         .fullScreenCover(item: $model.videoSession) { session in
             VideoPlayerView(session: session)

@@ -152,7 +152,16 @@ struct CompressionView: View {
             }
         }
         .presentationDetents([.medium, .large])
-        .onAppear(perform: loadPhotos)
+        .onAppear {
+            // Une nouvelle ouverture commence sans vidéo présélectionnée. Le choix
+            // de l'onglet « Vidéos de l'app » ne lance donc jamais une compression
+            // sur un ancien élément sélectionné.
+            sourceTab = 0
+            selectedPath = ""
+            chosenPhoto = nil
+            selectedPhoto = nil
+            loadPhotos()
+        }
         .sheet(item: $selectedPhoto) { selection in
             PhotoCompressionSheet(asset: selection.asset)
         }
@@ -216,6 +225,13 @@ struct CompressionView: View {
                 ZStack(alignment: .topTrailing) {
                     Artwork(url: track.thumbnail, seed: track.id, icon: "play.rectangle.fill",
                             width: 180, height: 104, radius: 12)
+                    if selected {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 22, weight: .bold))
+                            .foregroundStyle(.white, Color.brand)
+                            .padding(6)
+                            .accessibilityLabel(L("Vidéo sélectionnée"))
+                    }
                     if model.compressing.contains(track.path) {
                         ProgressView().padding(7).background(.ultraThinMaterial, in: Circle()).padding(6)
                     }
@@ -236,6 +252,90 @@ struct CompressionView: View {
 private struct PhotoAssetSelection: Identifiable {
     let asset: PHAsset
     var id: String { asset.localIdentifier }
+}
+
+/// Extrait toute la piste sonore ou un passage choisi d'une vidéo locale.
+struct VideoAudioConversionView: View {
+    @EnvironmentObject private var model: AppModel
+    @Environment(\.dismiss) private var dismiss
+    let track: Track
+    @State private var trim = false
+    @State private var duration = 1.0
+    @State private var start = 0.0
+    @State private var end = 1.0
+    @State private var exporting = false
+    @State private var progress = 0.0
+    @State private var error: String?
+    @State private var currentExport: AVAssetExportSession?
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section(L("Vidéo source")) {
+                    Text(track.title).font(.headline)
+                    Text(L("Le son sera enregistré en M4A (AAC), à côté de la vidéo."))
+                        .font(.footnote).foregroundStyle(.secondary)
+                }
+                Section(L("Extrait")) {
+                    Toggle(L("Couper un extrait"), isOn: $trim)
+                    if trim {
+                        Text(L("Début : {time}", ["time": Fmt.clock(start)]))
+                        Slider(value: $start, in: 0...max(0.1, duration - 0.1))
+                            .onChange(of: start) { value in if end <= value { end = min(duration, value + 0.1) } }
+                        Text(L("Fin : {time}", ["time": Fmt.clock(end)]))
+                        Slider(value: $end, in: min(duration, start + 0.1)...max(duration, start + 0.1))
+                    }
+                    if exporting {
+                        ProgressView(value: progress)
+                        Button(L("Annuler"), role: .destructive) { currentExport?.cancelExport() }
+                    } else {
+                        Button { convert() } label: { Label(L("Convertir en audio"), systemImage: "waveform") }
+                    }
+                    if let error { Text(error).foregroundStyle(.red).font(.footnote) }
+                }
+            }
+            .navigationTitle(L("Vidéo vers audio"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .confirmationAction) {
+                Button(exporting ? L("Annuler") : L("Fermer")) {
+                    if exporting { currentExport?.cancelExport() } else { dismiss() }
+                }
+            } }
+            .interactiveDismissDisabled(exporting)
+        }
+        .onAppear {
+            duration = max(MediaLibrary.shared.duration(track) ?? 1, 1)
+            end = duration
+        }
+    }
+
+    private func convert() {
+        let source = track.fileURL
+        let base = source.deletingLastPathComponent().appendingPathComponent(source.deletingPathExtension().lastPathComponent + " (audio)")
+        var target = base.appendingPathExtension("m4a")
+        var suffix = 2
+        while FileManager.default.fileExists(atPath: target.path) {
+            target = URL(fileURLWithPath: base.path + " \(suffix).m4a")
+            suffix += 1
+        }
+        exporting = true
+        progress = 0
+        error = nil
+        MediaCompressor.extractAudio(source: source, target: target, start: trim ? start : 0, end: trim ? end : nil,
+                                     progress: { progress = $0 }, exportSession: { currentExport = $0 }) { result in
+            exporting = false
+            currentExport = nil
+            switch result {
+            case .success:
+                model.rescan(force: true) {
+                    model.show(L("Audio créé : {name}", ["name": target.lastPathComponent]), .ok)
+                    dismiss()
+                }
+            case .failure(let failure):
+                error = failure.localizedDescription
+            }
+        }
+    }
 }
 
 private struct PhotoVideoCard: View {
@@ -356,8 +456,14 @@ private struct PhotoCompressionSheet: View {
         guard let asset, let session = AVAssetExportSession(asset: asset, presetName: preset) else {
             exporting = false; error = L("Cette vidéo ne peut pas être compressée."); return
         }
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".mp4")
-        session.outputURL = url; session.outputFileType = .mp4; session.shouldOptimizeForNetworkUse = true
+        let outputType: AVFileType = session.supportedFileTypes.contains(.mp4) ? .mp4 : .mov
+        guard session.supportedFileTypes.contains(outputType) else {
+            exporting = false
+            error = L("Le format de compression n'est pas compatible avec cette vidéo.")
+            return
+        }
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + (outputType == .mp4 ? ".mp4" : ".mov"))
+        session.outputURL = url; session.outputFileType = outputType; session.shouldOptimizeForNetworkUse = true
         currentExport = session
         let progressTask = Task { @MainActor in
             while session.status == .exporting {
@@ -377,6 +483,7 @@ private struct PhotoCompressionSheet: View {
             let attributes = try? FileManager.default.attributesOfItem(atPath: url.path)
             outputSize = (attributes?[.size] as? NSNumber)?.doubleValue ?? 0
         } else if session.status != .cancelled {
+            try? FileManager.default.removeItem(at: url)
             error = session.error?.localizedDescription ?? L("La compression a échoué.")
         } else {
             try? FileManager.default.removeItem(at: url)

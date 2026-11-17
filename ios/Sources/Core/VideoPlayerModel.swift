@@ -157,6 +157,8 @@ final class VideoPlayerModel: NSObject, ObservableObject, AVPictureInPictureCont
         subtitleDelay = 0
         selectedExternal = nil
         selectedEmbedded = nil
+        legibleGroup = nil
+        audibleGroup = nil
         embeddedSubtitles = []
         audioOptions = []
         selectedAudio = nil
@@ -165,7 +167,7 @@ final class VideoPlayerModel: NSObject, ObservableObject, AVPictureInPictureCont
         if autoSubtitles, let first = externalSubtitles.first {
             selectExternal(first)
         }
-        loadSelectionGroups(item.asset, path: track.path)
+        loadSelectionGroups(item.asset, item: item, path: track.path)
 
         if let position = savedPosition(track) {
             player.seek(to: CMTime(seconds: position, preferredTimescale: 600))
@@ -177,17 +179,18 @@ final class VideoPlayerModel: NSObject, ObservableObject, AVPictureInPictureCont
         updateNowPlaying()
     }
 
-    private func loadSelectionGroups(_ asset: AVAsset, path: String) {
+    private func loadSelectionGroups(_ asset: AVAsset, item: AVPlayerItem, path: String) {
         Task {
             let legible = try? await asset.loadMediaSelectionGroup(for: .legible)
             let audible = try? await asset.loadMediaSelectionGroup(for: .audible)
             DispatchQueue.main.async { [weak self] in
-                guard let self = self, self.current?.path == path else { return }
+                guard let self = self, self.current?.path == path, self.player.currentItem === item else { return }
                 self.legibleGroup = legible
                 self.audibleGroup = audible
-                self.embeddedSubtitles = legible?.options.filter {
-                    !$0.hasMediaCharacteristic(.containsOnlyForcedSubtitles)
-                } ?? []
+                // Garder aussi les pistes « forced » : certains fichiers ne
+                // proposent que cette piste et la cacher donnait l'impression
+                // qu'aucun sous-titre intégré n'existait.
+                self.embeddedSubtitles = legible?.options ?? []
                 self.audioOptions = (audible?.options.count ?? 0) > 1 ? (audible?.options ?? []) : []
                 if let group = audible, let item = self.player.currentItem {
                     self.selectedAudio = item.currentMediaSelection.selectedMediaOption(in: group)
@@ -774,6 +777,13 @@ struct VideoSurface: UIViewRepresentable {
     }
 
     func updateUIView(_ uiView: PlayerSurface, context: Context) {
+        // SwiftUI peut reconstruire la surface après un changement d'écran ou
+        // de piste. Réattacher explicitement le lecteur évite une couche noire
+        // qui conserverait l'ancien player alors que le son continue.
+        if uiView.playerLayer.player !== video.player {
+            uiView.playerLayer.player = video.player
+            video.attach(uiView.playerLayer)
+        }
         let gravity: AVLayerVideoGravity = fill ? .resizeAspectFill : .resizeAspect
         if uiView.playerLayer.videoGravity != gravity {
             uiView.playerLayer.videoGravity = gravity

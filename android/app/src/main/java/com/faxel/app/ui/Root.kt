@@ -184,9 +184,6 @@ fun FaxelRoot() {
                 // Tablette / paysage : rien sous la barre de navigation d'Android.
                 Column(Modifier.weight(1f).fillMaxHeight().navigationBarsPadding()) {
                     content(Modifier.weight(1f).fillMaxWidth())
-                    if (AudioConnection.current != null) {
-                        MiniPlayer(onOpen = { audioOpen = true })
-                    }
                 }
             }
         } else {
@@ -195,7 +192,6 @@ fun FaxelRoot() {
                 contentWindowInsets = WindowInsets(0, 0, 0, 0),
                 bottomBar = {
                     Column(Modifier.fillMaxWidth().navigationBarsPadding()) {
-                        if (AudioConnection.current != null) MiniPlayer(onOpen = { audioOpen = true })
                         val selectedDockIndex = when {
                             compressionOpen -> 3
                             tab == Tab.Browser -> 5
@@ -229,6 +225,19 @@ fun FaxelRoot() {
             ) { padding ->
                 content(Modifier.fillMaxSize().padding(padding))
             }
+        }
+
+        // Mini lecteur en surimpression : il ne réduit plus la hauteur de la
+        // bibliothèque et reste posé juste au-dessus de la capsule de navigation.
+        if (AudioConnection.current != null && !audioOpen) {
+            MiniPlayer(
+                onOpen = { audioOpen = true },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .navigationBarsPadding()
+                    .padding(bottom = if (wide) 12.dp else 62.dp)
+                    .padding(horizontal = 10.dp),
+            )
         }
 
         SnackbarHost(

@@ -11,6 +11,7 @@ import androidx.compose.material.icons.rounded.PhotoLibrary
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -26,6 +27,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -37,6 +39,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
@@ -58,10 +61,10 @@ import androidx.compose.material.icons.rounded.SkipNext
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
@@ -294,6 +297,7 @@ private fun LazyGridScope.full(content: @Composable () -> Unit) {
     item(span = { GridItemSpan(maxLineSpan) }) { content() }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun Header(context: Context, canSelect: Boolean) {
     val model = LibraryModel
@@ -318,27 +322,6 @@ private fun Header(context: Context, canSelect: Boolean) {
             if (model.section == Section.Videos) {
                 Box {
                     IconButton(onClick = { layoutMenu = true }) { Icon(Icons.Rounded.MoreVert, null, tint = accent) }
-                    DropdownMenu(expanded = layoutMenu, onDismissRequest = { layoutMenu = false }) {
-                        listOf("recent", "title", "size", "duration").forEach { sort ->
-                            val label = when (sort) {
-                                "title" -> "Trier par : titre"
-                                "size" -> "Trier par : taille"
-                                "duration" -> "Trier par : durée"
-                                else -> "Trier par : ajout récent"
-                            }
-                            DropdownMenuItem(text = { Text(label) }, onClick = { model.videoSort = sort; layoutMenu = false })
-                        }
-                        listOf("grid2", "grid4", "grid6", "list", "detail").forEach { mode ->
-                            val label = when (mode) {
-                                "grid4" -> stringResource(R.string.layout_grid4)
-                                "grid6" -> stringResource(R.string.layout_grid6)
-                                "list" -> stringResource(R.string.layout_list)
-                                "detail" -> stringResource(R.string.layout_detail)
-                                else -> stringResource(R.string.layout_grid2)
-                            }
-                            DropdownMenuItem(text = { Text(label) }, onClick = { model.videoLayout = mode; layoutMenu = false })
-                        }
-                    }
                 }
             }
             if (canSelect || model.selection.active) {
@@ -362,6 +345,29 @@ private fun Header(context: Context, canSelect: Boolean) {
             Row(Modifier.horizontalScroll(rememberScrollState()).padding(vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Section.entries.forEach { section ->
                     Chip(stringResource(section.label), model.section == section) { model.section = section }
+                }
+            }
+        }
+    }
+    if (layoutMenu) {
+        ModalBottomSheet(onDismissRequest = { layoutMenu = false }, containerColor = Color(0xFF17171B)) {
+            Column(Modifier.fillMaxWidth().heightIn(max = 560.dp).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp)) {
+                Text("Trier par", color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(vertical = 8.dp))
+                listOf("recent" to "Ajout récent", "title" to "Titre", "size" to "Taille", "duration" to "Durée").forEach { (sort, label) ->
+                    Text("${if (model.videoSort == sort) "✓  " else "    "}$label", color = if (model.videoSort == sort) accent else Color.White,
+                        fontSize = 16.sp, modifier = Modifier.fillMaxWidth().clickable { model.videoSort = sort; layoutMenu = false }.padding(vertical = 15.dp))
+                }
+                Text("Affichage", color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 12.dp, bottom = 8.dp))
+                listOf("grid2", "grid4", "grid6", "list", "detail").forEach { mode ->
+                    val label = when (mode) {
+                        "grid4" -> stringResource(R.string.layout_grid4)
+                        "grid6" -> stringResource(R.string.layout_grid6)
+                        "list" -> stringResource(R.string.layout_list)
+                        "detail" -> stringResource(R.string.layout_detail)
+                        else -> stringResource(R.string.layout_grid2)
+                    }
+                    Text("${if (model.videoLayout == mode) "✓  " else "    "}$label", color = if (model.videoLayout == mode) accent else Color.White,
+                        fontSize = 16.sp, modifier = Modifier.fillMaxWidth().clickable { model.videoLayout = mode; layoutMenu = false }.padding(vertical = 15.dp))
                 }
             }
         }
@@ -533,40 +539,40 @@ private fun EntryRow(entry: Entry, list: List<Entry>, context: Context, onAudio:
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun EntryMenu(entry: Entry, open: Boolean, playlistId: String? = null, onClose: () -> Unit) {
     val context = LocalContext.current
     var picking by remember { mutableStateOf(false) }
     var deleting by remember { mutableStateOf(false) }
-    DropdownMenu(expanded = open, onDismissRequest = onClose) {
-        if (entry.isAudio) {
-            DropdownMenuItem(text = { Text(stringResource(R.string.play_next)) }, leadingIcon = { Icon(Icons.Rounded.SkipNext, null) },
-                onClick = { AudioConnection.playNext(entry); onClose() })
+    var convertRequested by remember { mutableStateOf(false) }
+    var converting by remember { mutableStateOf(false) }
+    LaunchedEffect(convertRequested, open) {
+        if (convertRequested && !open) {
+            delay(250)
+            converting = true
+            convertRequested = false
         }
-        val fav = entry.path in Engine.favorites
-        DropdownMenuItem(
-            text = { Text(stringResource(if (fav) R.string.remove_favorite else R.string.add_favorite)) },
-            leadingIcon = { Icon(if (fav) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder, null) },
-            onClick = { Engine.toggleFavorite(entry); onClose() },
-        )
-        DropdownMenuItem(text = { Text(stringResource(R.string.add_to_playlist)) }, leadingIcon = { Icon(Icons.Rounded.MusicNote, null) },
-            onClick = { picking = true; onClose() })
-        if (playlistId != null) {
-            DropdownMenuItem(text = { Text(stringResource(R.string.remove_from_playlist)) }, leadingIcon = { Icon(Icons.Rounded.Close, null) },
-                onClick = { Engine.removeFromPlaylist(playlistId, entry.path); onClose() })
-        }
-        DropdownMenuItem(text = { Text(stringResource(R.string.share)) }, leadingIcon = { Icon(Icons.Rounded.Share, null) },
-            onClick = { share(context, entry); onClose() })
-        if (entry.isVideo) {
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.wm_title) + "…") },
-                leadingIcon = { Icon(Icons.Rounded.AutoFixHigh, null) },
-                onClick = { LibraryModel.watermark = entry.path; onClose() },
-            )
-        }
-        DropdownMenuItem(text = { Text(stringResource(R.string.delete)) }, leadingIcon = { Icon(Icons.Rounded.Delete, null) },
-            onClick = { deleting = true; onClose() })
     }
+    if (open) {
+        ModalBottomSheet(onDismissRequest = onClose, containerColor = Color(0xFF17171B)) {
+            Column(Modifier.fillMaxWidth().heightIn(max = 560.dp).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp)) {
+                Text(entry.title, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold, maxLines = 2,
+                    overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(bottom = 8.dp))
+                if (entry.isAudio) MenuAction(stringResource(R.string.play_next)) { AudioConnection.playNext(entry); onClose() }
+                val fav = entry.path in Engine.favorites
+                MenuAction(stringResource(if (fav) R.string.remove_favorite else R.string.add_favorite)) { Engine.toggleFavorite(entry); onClose() }
+                MenuAction(stringResource(R.string.add_to_playlist)) { picking = true; onClose() }
+                if (playlistId != null) MenuAction(stringResource(R.string.remove_from_playlist)) { Engine.removeFromPlaylist(playlistId, entry.path); onClose() }
+                MenuAction(stringResource(R.string.share)) { share(context, entry); onClose() }
+                if (entry.isVideo) MenuAction("Convertir en audio…") { convertRequested = true; onClose() }
+                if (entry.isVideo) MenuAction(stringResource(R.string.wm_title) + "…") { LibraryModel.watermark = entry.path; onClose() }
+                MenuAction(stringResource(R.string.delete), Color(0xFFFF6B6B)) { deleting = true; onClose() }
+                Spacer(Modifier.height(18.dp))
+            }
+        }
+    }
+    if (converting) VideoAudioConversion(entry) { converting = false }
     if (picking) PlaylistPicker(entry) { picking = false }
     if (deleting) {
         AlertDialog(
@@ -577,6 +583,11 @@ private fun EntryMenu(entry: Entry, open: Boolean, playlistId: String? = null, o
             dismissButton = { TextButton(onClick = { deleting = false }) { Text(stringResource(R.string.cancel)) } },
         )
     }
+}
+
+@Composable
+private fun MenuAction(label: String, color: Color = Color.White, action: () -> Unit) {
+    Text(label, color = color, fontSize = 16.sp, modifier = Modifier.fillMaxWidth().clickable(onClick = action).padding(vertical = 16.dp))
 }
 
 @Composable

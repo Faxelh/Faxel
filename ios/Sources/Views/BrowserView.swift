@@ -12,6 +12,7 @@ let browserSites: [BrowserSite] = [
     BrowserSite(name: "Facebook", link: "https://m.facebook.com/watch/"),
     BrowserSite(name: "Instagram", link: "https://www.instagram.com/"),
     BrowserSite(name: "X", link: "https://x.com/"),
+    BrowserSite(name: "Threads", link: "https://www.threads.com/"),
 ]
 
 /// Le lien ressemble-t-il à une vidéo (ou une publication) téléchargeable ?
@@ -19,7 +20,7 @@ func looksLikeVideo(_ link: String) -> Bool {
     let lower = link.lowercased()
     guard lower.hasPrefix("http") else { return false }
     let markers = ["/video/", "/photo/", "/reel/", "/reels/", "/videos/", "watch?v=", "/watch/", "youtu.be/",
-                   "/shorts/", "/status/", "fb.watch", "/p/", "/tv/", "dailymotion.com/video", "vimeo.com/",
+                   "/shorts/", "/status/", "fb.watch", "/p/", "/tv/", "/post/", "dailymotion.com/video", "vimeo.com/",
                    "/share/v/", "/share/r/", "story.php", "/playlist?list="]
     return markers.contains { lower.contains($0) }
 }
@@ -175,6 +176,28 @@ final class BrowserModel: NSObject, ObservableObject, WKNavigationDelegate, WKUI
     })();
     """
 
+    /// Reels intégrés : garder l'image entière dans la fenêtre du site au lieu
+    /// de laisser certains CSS `object-fit: cover` couper le haut et le bas.
+    static let videoFrameFix = """
+    (function () {
+      if (window.__faxelFrameFix) return; window.__faxelFrameFix = true;
+      function fix(root) {
+        var videos = (root || document).querySelectorAll ? (root || document).querySelectorAll('video') : [];
+        for (var i = 0; i < videos.length; i++) {
+          var v = videos[i];
+          if (getComputedStyle(v).objectFit !== 'contain') v.style.setProperty('object-fit', 'contain', 'important');
+          if (getComputedStyle(v).objectPosition !== 'center center') v.style.setProperty('object-position', 'center center', 'important');
+        }
+      }
+      fix(document);
+      new MutationObserver(function (changes) {
+        for (var i = 0; i < changes.length; i++) for (var j = 0; j < changes[i].addedNodes.length; j++) {
+          var node = changes[i].addedNodes[j]; if (node.nodeType === 1) fix(node);
+        }
+      }).observe(document.documentElement, { childList: true, subtree: true });
+    })();
+    """
+
     /// Retient les vidéos des fils (TikTok…) au fur et à mesure qu'ils se chargent,
     /// pour retrouver le lien exact de la vidéo affichée.
     static let feedHook = """
@@ -323,6 +346,8 @@ final class BrowserModel: NSObject, ObservableObject, WKNavigationDelegate, WKUI
             configuration.websiteDataStore = .default()
             let script = WKUserScript(source: BrowserModel.touchFix, injectionTime: .atDocumentEnd, forMainFrameOnly: true)
             configuration.userContentController.addUserScript(script)
+            let frameFix = WKUserScript(source: BrowserModel.videoFrameFix, injectionTime: .atDocumentEnd, forMainFrameOnly: true)
+            configuration.userContentController.addUserScript(frameFix)
             let hook = WKUserScript(source: BrowserModel.feedHook, injectionTime: .atDocumentStart, forMainFrameOnly: true)
             configuration.userContentController.addUserScript(hook)
             let watch = WKUserScript(source: BrowserModel.mediaWatch, injectionTime: .atDocumentStart, forMainFrameOnly: true)
@@ -1115,7 +1140,7 @@ struct BrowserView: View {
                 return
             }
             if !looksLikeVideo(link), let host = URL(string: link)?.host?.lowercased(),
-               ["youtube", "youtu.be", "tiktok", "facebook", "fb.watch", "instagram", "twitter", "x.com"]
+               ["youtube", "youtu.be", "tiktok", "facebook", "fb.watch", "instagram", "twitter", "x.com", "threads.net", "threads.com"]
                 .contains(where: { host.contains($0) }) {
                 model.show(L("Aucune vidéo trouvée sur cette page : ouvrez la vidéo (touchez-la), puis touchez à nouveau le bouton."),
                            .warn)

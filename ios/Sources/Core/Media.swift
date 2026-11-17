@@ -14,18 +14,7 @@ enum PhotoSaver {
                 DispatchQueue.main.async { completion(false, "Autorisation Photos : \(status). Vérifiez Réglages > Apps > Faxel > Photos.") }
                 return
             }
-            PHPhotoLibrary.shared().performChanges({
-                if let video = video {
-                    _ = PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: video)
-                }
-                for image in images {
-                    _ = PHAssetChangeRequest.creationRequestForAssetFromImage(atFileURL: image)
-                }
-            }, completionHandler: { success, error in
-                DispatchQueue.main.async {
-                    completion(success, success ? nil : (error?.localizedDescription ?? "Photos a refusé l'enregistrement."))
-                }
-            })
+            performChange(videos: video.map { [$0] } ?? [], images: images, completion: completion)
         }
     }
 }
@@ -42,24 +31,89 @@ extension PhotoSaver {
                 DispatchQueue.main.async { completion(false, "Autorisation Photos : \(status). Vérifiez Réglages > Apps > Faxel > Photos.") }
                 return
             }
+            performChange(videos: videos, images: images, completion: completion)
+        }
+    }
+
+    /// PhotoKit's older convenience constructors can fail on local downloads on
+    /// recent iOS versions (including error 3302). Explicit resource requests
+    /// preserve the source file and report which item could not be imported.
+    private static func performChange(videos: [URL], images: [URL], completion: @escaping (Bool, String?) -> Void) {
+        let files = videos + images
+        guard let missing = files.first(where: { !FileManager.default.isReadableFile(atPath: $0.path) }) else {
             PHPhotoLibrary.shared().performChanges({
                 for video in videos {
-                    _ = PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: video)
+                    let request = PHAssetCreationRequest.forAsset()
+                    let options = PHAssetResourceCreationOptions()
+                    options.shouldMoveFile = false
+                    request.addResource(with: .video, fileURL: video, options: options)
                 }
                 for image in images {
-                    _ = PHAssetChangeRequest.creationRequestForAssetFromImage(atFileURL: image)
+                    let request = PHAssetCreationRequest.forAsset()
+                    let options = PHAssetResourceCreationOptions()
+                    options.shouldMoveFile = false
+                    request.addResource(with: .photo, fileURL: image, options: options)
                 }
             }, completionHandler: { success, error in
                 DispatchQueue.main.async {
-                    completion(success, success ? nil : (error?.localizedDescription ?? "Photos a refusé l'enregistrement."))
+                    guard !success, let error = error as NSError? else {
+                        completion(success, success ? nil : "Photos a refusé l'enregistrement.")
+                        return
+                    }
+                    let itemName = files.first?.lastPathComponent ?? "fichier"
+                    let details = error.code == 3302
+                        ? "Photos a refusé « \(itemName) » (erreur 3302). Le fichier original reste dans la bibliothèque Faxel. Vérifiez l’espace disponible et l’accès de Faxel dans Réglages > Confidentialité et sécurité > Photos."
+                        : "Impossible d’ajouter « \(itemName) » à Photos (\(error.code)) : \(error.localizedDescription)"
+                    completion(false, details)
                 }
             })
+            return
         }
+        DispatchQueue.main.async { completion(false, "Fichier inaccessible : \(missing.lastPathComponent).") }
     }
 }
 
 /// Compression des vidéos (720p) et des sons (AAC) avec AVFoundation.
 enum MediaCompressor {
+    static func extractAudio(source: URL, target: URL, start: Double, end: Double?,
+                             progress: ((Double) -> Void)? = nil,
+                             exportSession: ((AVAssetExportSession) -> Void)? = nil,
+                             completion: @escaping (Result<Void, Error>) -> Void) {
+        let asset = AVURLAsset(url: source)
+        guard asset.tracks(withMediaType: .audio).first != nil,
+              AVAssetExportSession.exportPresets(compatibleWith: asset).contains(AVAssetExportPresetAppleM4A),
+              let export = AVAssetExportSession(asset: asset, presetName: AVAssetExportPresetAppleM4A),
+              export.supportedFileTypes.contains(.m4a) else {
+            completion(.failure(NSError(domain: "FaxelAudioExtract", code: 1,
+                                        userInfo: [NSLocalizedDescriptionKey: L("Cette vidéo ne contient pas de piste audio compatible.")])))
+            return
+        }
+        let startTime = CMTime(seconds: max(0, start), preferredTimescale: 600)
+        if let end = end, end > start {
+            export.timeRange = CMTimeRange(start: startTime, duration: CMTime(seconds: end - start, preferredTimescale: 600))
+        }
+        export.outputURL = target
+        export.outputFileType = .m4a
+        export.shouldOptimizeForNetworkUse = true
+        exportSession?(export)
+        let progressTimer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { _ in
+            DispatchQueue.main.async { progress?(Double(export.progress)) }
+        }
+        export.exportAsynchronously {
+            DispatchQueue.main.async {
+                progressTimer.invalidate()
+                if export.status == .completed {
+                    progress?(1)
+                    completion(.success(()))
+                } else {
+                    try? FileManager.default.removeItem(at: target)
+                    completion(.failure(export.error ?? NSError(domain: "FaxelAudioExtract", code: 2,
+                        userInfo: [NSLocalizedDescriptionKey: L("La conversion vidéo vers audio a échoué.")]))))
+                }
+            }
+        }
+    }
+
     static func compressVideo(source: URL, target: URL,
                               presetName requestedPreset: String = AVAssetExportPreset1280x720,
                               progress: ((Double) -> Void)? = nil,

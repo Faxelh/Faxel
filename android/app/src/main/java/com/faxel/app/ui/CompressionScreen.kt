@@ -104,8 +104,12 @@ fun CompressionScreen(onClose: () -> Unit) {
     var savedToGallery by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        if (uri != null) scope.launch {
+        if (uri != null && sourceTab == 0) scope.launch {
             val picked = withContext(Dispatchers.IO) { copyPickedVideo(context, uri) }
+            if (sourceTab != 0) {
+                picked?.let { File(it.path).delete() }
+                return@launch
+            }
             selected = picked
             photoSource = picked != null
             picked?.let { sourceSize = File(it.path).length() }
@@ -188,7 +192,10 @@ fun CompressionScreen(onClose: () -> Unit) {
             }
             Text(if (sourceTab == 0) "Votre vidéo sélectionnée" else "Choisissez une vidéo", color = Muted, fontSize = 15.sp, fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp))
-            val picked = selected?.takeIf { sourceTab == 1 || photoSource }
+    // Ne jamais réutiliser un élément Photos quand l'onglet « Vidéos de l'app »
+    // est actif : sinon le bouton pouvait compresser un fichier différent de
+    // celui affiché dans la liste.
+    val picked = selected?.takeIf { if (sourceTab == 1) !photoSource else photoSource }
             if (picked != null) {
                 Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Taille estimée : ${formatSize((sourceSize * quality.estimate).toDouble())}", color = Muted, fontSize = 13.sp)

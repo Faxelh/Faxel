@@ -64,6 +64,7 @@ final class AppModel: ObservableObject {
     @Published var showBrowser = false
     @Published var showSearch = false
     @Published var showNowPlaying = false
+    @Published var audioConversionTrack: Track?
 
     // Navigation et sécurité
     // Navigation retenue d'une ouverture à l'autre (onglet et écrans ouverts).

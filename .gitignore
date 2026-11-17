@@ -1,0 +1,13 @@
+# Fichiers générés par Gradle et Chaquopy (yt-dlp inclus).
+**/build/
+**/.gradle/
+.gradle/
+
+# Fichiers générés par Xcode.
+**/DerivedData/
+*.xcuserstate
+
+# Fichiers temporaires des éditeurs et systèmes.
+.DS_Store
+Thumbs.db
+*.tmp
